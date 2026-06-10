@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hermes chat</title>
+  <link rel="stylesheet" href="/shared.css" />
+</head>
+<body class="chat-layout">
+  <aside class="sidebar">
+    <a class="back" href="/">&larr; Instances</a>
+    <button id="new-chat" class="primary">New chat</button>
+    <nav id="sessions"></nav>
+  </aside>
+
+  <main class="chat-main">
+    <header class="topbar">
+      <div class="brand" id="instance-label"></div>
+      <select id="model" hidden></select>
+    </header>
+    <div id="messages" class="messages"></div>
+    <form id="composer" class="composer">
+      <textarea id="input" rows="1" placeholder="Message the agent..." required></textarea>
+      <button id="send" class="primary" type="submit">Send</button>
+      <button id="stop" type="button" hidden>Stop</button>
+    </form>
+  </main>
+
+  <script src="/chat.js"></script>
+</body>
+</html>

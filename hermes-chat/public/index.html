@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hermes chat · Instances</title>
+  <link rel="stylesheet" href="/shared.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Hermes chat <span class="muted">· Agent37 example</span></div>
+    <button id="create" class="primary">Create instance</button>
+  </header>
+
+  <main class="page">
+    <p class="muted note" id="status"></p>
+    <table id="instances" hidden>
+      <thead>
+        <tr><th>Name</th><th>ID</th><th>Status</th><th>Created</th><th></th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="empty" class="empty" hidden>
+      <h2>No instances yet</h2>
+      <p>Create one to start chatting. The smallest instance bills $4.99 for its first month from your wallet, refunded pro rata if you delete it.</p>
+    </div>
+  </main>
+
+  <script src="/instances.js"></script>
+</body>
+</html>
