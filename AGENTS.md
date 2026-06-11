@@ -15,3 +15,7 @@ One folder per example, each fully self-contained (own `package.json`, own `READ
 - Keep dependencies minimal. `hermes-chat` uses only `express` and `dotenv`; hold new examples to the same bar.
 - The `sk_live_` API key is a server-side secret. Every example that has a browser UI must route API calls through its own server; the key never reaches the client.
 - Plain JavaScript, no build step, unless an example's whole point is a specific framework.
+
+## Examples run against production
+
+There is no staging: running an example exercises the live API with real money (creating an instance debits the wallet's first month; chat burns managed-usage budget). Keep per-instance budgets small (`hermes-chat` tops up $1), delete instances when you're done testing, and treat a wallet or budget `402` as an expected state the example should surface clearly — not an error to retry.
