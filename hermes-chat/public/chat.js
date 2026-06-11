@@ -16,6 +16,8 @@ let inFlight = null; // { responseId } while a turn is streaming
 const api = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body ?? {}) }),
+  // SSE endpoints need the raw Response; request() would consume the body as JSON.
+  stream: (path, init) => fetch(`/api/i/${instanceId}${path}`, { headers: { 'Content-Type': 'application/json' }, ...init }),
 };
 
 async function request(path, init) {
@@ -228,18 +230,86 @@ async function* sseFrames(response) {
   }
 }
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// How long to keep recovering a dropped stream before giving up.
+const MAX_RECOVERY_ATTEMPTS = 8;
+const RECOVERY_DELAY_MS = 1500;
+
+// Terminal states render the same whether they arrive as a stream event or from
+// polling GET /responses/{id} after a drop.
+function renderCompleted(bubble, outputText, sawToolCalls) {
+  bubble.closeThinking();
+  // The terminal payload carries the authoritative full text: replace, never append.
+  // A replayed stream re-sends every delta, so appending would duplicate.
+  const text = (outputText ?? '').replace(/^\n+/, '');
+  bubble.setText(text);
+  if (!text && !sawToolCalls) {
+    addError(
+      'The agent returned an empty reply.',
+      'This usually means the instance managed budget or the workspace balance is exhausted. Raise it, then try again.'
+    );
+  }
+}
+
+function renderFailed(bubble, error) {
+  bubble.remove();
+  addError(error?.message || 'The turn failed.', error?.hint);
+}
+
+// Consume one SSE response stream, rendering into `bubble`. Returns what the
+// stream proved: whether a terminal event arrived, and whether tools ran.
+async function consumeStream(response, bubble) {
+  let sawTerminal = false;
+  let sawToolCalls = false;
+  for await (const { event, data } of sseFrames(response)) {
+    switch (event) {
+      case 'response.created':
+        sessionId = data.session_id;
+        inFlight = { responseId: data.id };
+        bubble.pending('Agent is working...');
+        break;
+      case 'response.reasoning.delta':
+        bubble.thinking(data.text);
+        break;
+      case 'response.output_text.delta':
+        bubble.closeThinking();
+        bubble.appendText(data.text);
+        break;
+      case 'response.tool_call.started':
+        sawToolCalls = true;
+        bubble.tool(data.label || data.tool, 'running');
+        break;
+      case 'response.tool_call.completed':
+        bubble.tool(data.label || data.tool, 'done');
+        break;
+      case 'response.tool_call.failed':
+        bubble.tool(data.label || data.tool, 'failed');
+        break;
+      case 'response.completed':
+        sawTerminal = true;
+        renderCompleted(bubble, data.output_text, sawToolCalls);
+        break;
+      case 'response.failed':
+        sawTerminal = true;
+        renderFailed(bubble, data.error);
+        break;
+    }
+  }
+  return { sawTerminal, sawToolCalls };
+}
+
 async function sendTurn(text) {
   const wasNewSession = !sessionId;
   addMessage('user').setText(text);
-  const bubble = addMessage('assistant');
+  let bubble = addMessage('assistant');
   bubble.pending('Waiting for the agent...');
   setBusy(true);
 
   let response;
   try {
-    response = await fetch(`/api/i/${instanceId}/responses`, {
+    response = await api.stream('/responses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ input: text, stream: true, ...(sessionId ? { session_id: sessionId } : {}), ...selectedModel() }),
     });
   } catch (err) {
@@ -260,79 +330,54 @@ async function sendTurn(text) {
     return addError(body?.error?.message || `Request failed (HTTP ${response.status}).`, body?.error?.hint);
   }
 
-  let sawTerminal = false;
-  let sawToolCalls = false;
+  let outcome = { sawTerminal: false, sawToolCalls: false };
   try {
-    for await (const { event, data } of sseFrames(response)) {
-      switch (event) {
-        case 'response.created':
-          sessionId = data.session_id;
-          inFlight = { responseId: data.id };
-          bubble.pending('Agent is working...');
-          break;
-        case 'response.reasoning.delta':
-          bubble.thinking(data.text);
-          break;
-        case 'response.output_text.delta':
-          bubble.closeThinking();
-          bubble.appendText(data.text);
-          break;
-        case 'response.tool_call.started':
-          sawToolCalls = true;
-          bubble.tool(data.label || data.tool, 'running');
-          break;
-        case 'response.tool_call.completed':
-          bubble.tool(data.label || data.tool, 'done');
-          break;
-        case 'response.tool_call.failed':
-          bubble.tool(data.label || data.tool, 'failed');
-          break;
-        case 'response.completed': {
-          sawTerminal = true;
-          bubble.closeThinking();
-          // The terminal event carries the authoritative full text: replace, never append.
-          // A replayed stream re-sends every delta, so appending would duplicate.
-          bubble.setText((data.output_text ?? '').replace(/^\n+/, ''));
-          if (!bubble.getText() && !sawToolCalls) {
-            addError(
-              'The agent returned an empty reply.',
-              'This usually means the instance managed budget or the workspace balance is exhausted. Raise it, then try again.'
-            );
-          }
-          break;
-        }
-        case 'response.failed':
-          sawTerminal = true;
-          bubble.remove();
-          addError(data.error?.message || 'The turn failed.', data.error?.hint);
-          break;
-      }
-    }
+    outcome = await consumeStream(response, bubble);
   } catch {
-    // Network drop mid-stream; fall through to the recovery below.
+    // Network drop mid-stream; the reattach loop below recovers.
   }
 
-  // A stream that closes without a terminal event proves nothing about the turn. Ask the
-  // instance what really happened.
-  if (!sawTerminal && inFlight) {
+  // A stream that closes without a terminal event proves nothing about the turn: it
+  // is usually still running server-side. Reattach to the response stream — it
+  // replays every event so far, then resumes live — until a terminal event arrives.
+  let attempts = 0;
+  while (!outcome.sawTerminal && inFlight && attempts < MAX_RECOVERY_ATTEMPTS) {
+    attempts += 1;
+    if (attempts > 1) await delay(RECOVERY_DELAY_MS); // the only sleep: every retry path funnels back here
+    let final;
     try {
       bubble.pending('Checking the final reply...');
-      const final = await api.get(`/responses/${inFlight.responseId}`);
-      if (final.status === 'completed') bubble.setText(final.output_text.replace(/^\n+/, ''));
-      else if (final.status === 'cancelled') {
-        bubble.remove();
-        addSystemNote('Stopped.');
-      } else if (final.error) {
-        bubble.remove();
-        addError(final.error.message, final.error.hint);
-      } else {
-        bubble.remove();
-        addSystemNote(`Turn ended with status: ${final.status}`);
-      }
+      final = await api.get(`/responses/${inFlight.responseId}`);
     } catch {
-      bubble.remove();
-      addSystemNote('Connection lost. Reload to see the final reply.');
+      continue;
     }
+    if (final.status === 'completed') {
+      outcome.sawTerminal = true;
+      renderCompleted(bubble, final.output_text, outcome.sawToolCalls);
+    } else if (final.status === 'cancelled') {
+      outcome.sawTerminal = true;
+      bubble.remove();
+      addSystemNote('Stopped.');
+    } else if (final.status === 'failed') {
+      outcome.sawTerminal = true;
+      renderFailed(bubble, final.error);
+    } else {
+      // Still in_progress: reattach. Replace the bubble, because the replayed
+      // stream re-sends everything rendered so far.
+      bubble.pending('Connection dropped — reattaching...');
+      try {
+        const replay = await api.stream(`/responses/${inFlight.responseId}/stream`);
+        if (!replay.headers.get('content-type')?.includes('text/event-stream')) throw new Error('not a stream');
+        bubble.remove();
+        bubble = addMessage('assistant');
+        bubble.pending('Reattached — catching up...');
+        outcome = await consumeStream(replay, bubble);
+      } catch {}
+    }
+  }
+  if (!outcome.sawTerminal) {
+    bubble.remove();
+    addSystemNote('Lost the connection and could not reattach. Reload to see the reply.');
   }
 
   bubble.clearPending();
