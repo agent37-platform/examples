@@ -54,6 +54,7 @@ th { font-size: 13px; color: var(--muted); font-weight: 500; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr.clickable { cursor: pointer; }
 tbody tr.clickable:hover { background: #f4f3f0; }
+tbody tr.pending-row { background: #fffaf0; }
 td code { font-size: 13px; }
 
 .chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12.5px; border: 1px solid var(--border); }
@@ -99,6 +100,21 @@ td code { font-size: 13px; }
 .msg { max-width: 760px; width: fit-content; }
 .msg.user { align-self: flex-end; background: var(--accent); color: #fff; padding: 10px 14px; border-radius: 14px 14px 4px 14px; white-space: pre-wrap; }
 .msg.assistant { align-self: flex-start; white-space: pre-wrap; }
+.msg.assistant .pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.msg.assistant .pending::after {
+  content: "";
+  width: 22px;
+  height: 4px;
+  background: radial-gradient(circle closest-side, currentColor 90%, transparent) 0 50% / 6px 4px repeat-x;
+  animation: typing-dots 1s steps(4, end) infinite;
+  opacity: 0.7;
+}
 .msg.system { align-self: center; color: var(--muted); font-size: 13px; }
 .msg.error { align-self: flex-start; color: var(--red); background: #fdf1f0; border: 1px solid #eccac8; padding: 10px 14px; border-radius: 10px; }
 
@@ -124,3 +140,8 @@ details.thinking div { white-space: pre-wrap; padding: 6px 0 0 14px; border-left
 .composer textarea:focus { outline: 2px solid #c9c9c4; }
 
 select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+
+@keyframes typing-dots {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
