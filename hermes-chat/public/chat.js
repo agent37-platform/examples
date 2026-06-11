@@ -110,6 +110,7 @@ function addMessage(role) {
   let thinkingEl = null;
   let toolsEl = null;
   let textEl = null;
+  let pendingEl = null;
   const ensureText = () => {
     if (!textEl) {
       textEl = document.createElement('span');
@@ -120,15 +121,35 @@ function addMessage(role) {
   return {
     el,
     setText(text) {
+      this.clearPending();
       ensureText().textContent = text;
       scrollToBottom();
     },
     appendText(text) {
+      this.clearPending();
       ensureText().textContent += text;
       scrollToBottom();
     },
     getText: () => textEl?.textContent ?? '',
+    pending(text) {
+      if (!pendingEl) {
+        pendingEl = document.createElement('span');
+        pendingEl.className = 'pending';
+        el.appendChild(pendingEl);
+      }
+      pendingEl.textContent = text;
+      scrollToBottom();
+    },
+    clearPending() {
+      pendingEl?.remove();
+      pendingEl = null;
+    },
+    remove() {
+      el.remove();
+      scrollToBottom();
+    },
     thinking(text, open = true) {
+      this.clearPending();
       if (!thinkingEl) {
         thinkingEl = document.createElement('details');
         thinkingEl.className = 'thinking';
@@ -142,6 +163,7 @@ function addMessage(role) {
       if (thinkingEl) thinkingEl.open = false;
     },
     tool(name, state) {
+      this.clearPending();
       if (!toolsEl) {
         toolsEl = document.createElement('div');
         toolsEl.className = 'tools';
@@ -210,6 +232,7 @@ async function sendTurn(text) {
   const wasNewSession = !sessionId;
   addMessage('user').setText(text);
   const bubble = addMessage('assistant');
+  bubble.pending('Waiting for the agent...');
   setBusy(true);
 
   let response;
@@ -221,6 +244,7 @@ async function sendTurn(text) {
     });
   } catch (err) {
     setBusy(false);
+    bubble.remove();
     return addError(`Could not reach the server: ${err.message}`);
   }
 
@@ -229,6 +253,7 @@ async function sendTurn(text) {
   if (!response.headers.get('content-type')?.includes('text/event-stream')) {
     const body = await response.json().catch(() => null);
     setBusy(false);
+    bubble.remove();
     if (body?.error?.code === 'session_busy') {
       return addError('A response is already running on this session.', 'Wait for it to finish, or start a new chat.');
     }
@@ -243,6 +268,7 @@ async function sendTurn(text) {
         case 'response.created':
           sessionId = data.session_id;
           inFlight = { responseId: data.id };
+          bubble.pending('Agent is working...');
           break;
         case 'response.reasoning.delta':
           bubble.thinking(data.text);
@@ -277,6 +303,7 @@ async function sendTurn(text) {
         }
         case 'response.failed':
           sawTerminal = true;
+          bubble.remove();
           addError(data.error?.message || 'The turn failed.', data.error?.hint);
           break;
       }
@@ -289,16 +316,26 @@ async function sendTurn(text) {
   // instance what really happened.
   if (!sawTerminal && inFlight) {
     try {
+      bubble.pending('Checking the final reply...');
       const final = await api.get(`/responses/${inFlight.responseId}`);
       if (final.status === 'completed') bubble.setText(final.output_text.replace(/^\n+/, ''));
-      else if (final.status === 'cancelled') addSystemNote('Stopped.');
-      else if (final.error) addError(final.error.message, final.error.hint);
-      else addSystemNote(`Turn ended with status: ${final.status}`);
+      else if (final.status === 'cancelled') {
+        bubble.remove();
+        addSystemNote('Stopped.');
+      } else if (final.error) {
+        bubble.remove();
+        addError(final.error.message, final.error.hint);
+      } else {
+        bubble.remove();
+        addSystemNote(`Turn ended with status: ${final.status}`);
+      }
     } catch {
+      bubble.remove();
       addSystemNote('Connection lost. Reload to see the final reply.');
     }
   }
 
+  bubble.clearPending();
   inFlight = null;
   setBusy(false);
   if (wasNewSession) loadSessions();

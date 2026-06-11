@@ -5,6 +5,8 @@ const emptyEl = document.getElementById('empty');
 const createBtn = document.getElementById('create');
 
 const readinessPollers = new Map();
+let pendingCreate = null;
+let currentInstances = [];
 
 async function api(path, init) {
   const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...init });
@@ -16,22 +18,28 @@ async function api(path, init) {
 function statusChip(instance) {
   if (instance.status === 'running') return '<span class="chip starting" data-ready-chip>Starting</span>';
   if (instance.status === 'failed') return '<span class="chip failed">Failed</span>';
+  if (instance.status === 'creating') return '<span class="chip starting">Creating</span>';
   return `<span class="chip">${instance.status}</span>`;
 }
 
 function render(instances) {
   tbody.innerHTML = '';
-  table.hidden = instances.length === 0;
-  emptyEl.hidden = instances.length > 0;
-  for (const instance of instances) {
+  const rows = pendingCreate ? [pendingCreate, ...instances] : instances;
+  table.hidden = rows.length === 0;
+  emptyEl.hidden = rows.length > 0;
+  for (const instance of rows) {
     const tr = document.createElement('tr');
-    tr.className = 'clickable';
+    tr.className = instance.pending ? 'pending-row' : 'clickable';
     tr.innerHTML = `
       <td>${escapeHtml(instance.name || 'Untitled')}</td>
       <td><code>${instance.id}</code></td>
       <td>${statusChip(instance)}</td>
       <td class="muted">${new Date(instance.created * 1000).toLocaleString()}</td>
-      <td><button class="danger" data-delete>Delete</button></td>`;
+      <td>${instance.pending ? '<span class="muted">Please wait...</span>' : '<button class="danger" data-delete>Delete</button>'}</td>`;
+    if (instance.pending) {
+      tbody.appendChild(tr);
+      continue;
+    }
     tr.addEventListener('click', () => {
       if (instance.status === 'running') location.href = `/chat.html?instance=${instance.id}`;
     });
@@ -75,8 +83,9 @@ function pollReadiness(id, row) {
 async function refresh() {
   try {
     const { data } = await api('/api/instances');
-    render(data.filter((instance) => instance.status !== 'deleted'));
-    statusEl.textContent = '';
+    currentInstances = data.filter((instance) => instance.status !== 'deleted');
+    render(currentInstances);
+    if (!pendingCreate) statusEl.textContent = '';
   } catch (err) {
     statusEl.textContent = err.code === 'invalid_api_key'
       ? 'Your API key was rejected. Check AGENT37_API_KEY in .env and restart the server.'
@@ -87,7 +96,17 @@ async function refresh() {
 createBtn.addEventListener('click', async () => {
   const name = prompt('Name for the new instance:', 'My Hermes agent');
   if (name === null) return;
+  const label = name.trim() || 'hermes-chat example';
+  pendingCreate = {
+    pending: true,
+    name: label,
+    id: 'creating...',
+    status: 'creating',
+    created: Math.floor(Date.now() / 1000),
+  };
+  render(currentInstances);
   createBtn.disabled = true;
+  createBtn.textContent = 'Creating...';
   statusEl.textContent = 'Creating instance. This usually takes a few seconds, but can take a few minutes on a cold host...';
   try {
     await api('/api/instances', { method: 'POST', body: JSON.stringify({ name }) });
@@ -97,7 +116,9 @@ createBtn.addEventListener('click', async () => {
       ? 'Your wallet balance is too low. The smallest instance bills $4.99 at create. Top up at agent37.com/dashboard/cloud/billing.'
       : `Create failed: ${err.message} (refresh the list, the instance may still appear)`;
   }
+  pendingCreate = null;
   createBtn.disabled = false;
+  createBtn.textContent = 'Create instance';
   refresh();
 });
 
