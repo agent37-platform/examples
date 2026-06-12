@@ -45,7 +45,7 @@ function render(instances) {
     });
     tr.querySelector('[data-delete]').addEventListener('click', async (event) => {
       event.stopPropagation();
-      if (!confirm(`Delete instance ${instance.id}? Unused time this month is refunded.`)) return;
+      if (!confirm(`Delete instance ${instance.id}? Unused prepaid time is refunded.`)) return;
       try {
         await api(`/api/instances/${instance.id}`, { method: 'DELETE' });
         refresh();
@@ -113,7 +113,7 @@ createBtn.addEventListener('click', async () => {
     statusEl.textContent = '';
   } catch (err) {
     statusEl.textContent = err.code === 'insufficient_balance'
-      ? 'Your wallet balance is too low. The smallest instance bills $4.99 at create. Top up at agent37.com/dashboard/cloud/billing.'
+      ? 'Your wallet balance is too low. The smallest instance debits about $0.16 at create. Top up at agent37.com/dashboard/cloud/billing.'
       : `Create failed: ${err.message} (refresh the list, the instance may still appear)`;
   }
   pendingCreate = null;

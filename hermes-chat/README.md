@@ -16,7 +16,7 @@ Open [http://localhost:3000](http://localhost:3000), create an instance, wait fo
 
 ## What it costs
 
-Creating an instance debits $4.99 from your wallet for its first month and grants the instance a $1 managed LLM budget. Deleting it refunds the unused part of the month, so trying this out costs cents. The instance renews at $4.99 on its monthly anniversary while it exists.
+Creating an instance debits one day of compute (about $0.16) from your wallet and grants the instance a $1 managed LLM budget. The instance costs $4.94 per month while it exists, billed a day at a time, and deleting it refunds the unused part of the prepaid day, so trying this out costs cents.
 
 ## How it works
 
