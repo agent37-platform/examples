@@ -11,6 +11,7 @@ Runnable example apps built on the [Agent37 Agents API](https://www.agent37.com/
 
 | Example | What it shows |
 |---|---|
+| [bruno](./bruno) | Click through the raw API in [Bruno](https://www.usebruno.com/), no code: create an instance, chat with it, continue the thread, delete. The fastest way to see the API end to end. |
 | [hermes-chat](./hermes-chat) | A streaming chat app on a Hermes agent instance: create and manage instances, stream replies token by token, sessions, cancel. |
 
 ## Building your own

@@ -1,0 +1,33 @@
+meta {
+  name: 02 Wait for Ready
+  type: http
+  seq: 2
+}
+
+get {
+  url: https://{{instanceId}}.{{proxyDomain}}/v1/health
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("agent is up", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.ok).to.equal(true);
+  });
+}
+
+docs {
+  The first request that talks to the instance directly instead of api.agent37.com: it hits the
+  instance's own URL on the public edge (https://{instanceId}.agent37.app), authenticated with
+  the same sk_live_ key.
+
+  01 Create Instance returns once the container is "running", but the agent inside needs a moment
+  more to come up. While it is still booting this returns 502 or 503 — click Send again every few
+  seconds until you get 200 with ok: true. On a cold host that can take a minute or two. Then move
+  on to 03 Send Message.
+}

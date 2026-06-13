@@ -1,0 +1,50 @@
+meta {
+  name: 03 Send Message
+  type: http
+  seq: 3
+}
+
+post {
+  url: https://{{instanceId}}.{{proxyDomain}}/v1/responses
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "input": "Hey, how are you?"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.session_id) {
+    bru.setEnvVar("sessionId", res.body.session_id);
+  }
+}
+
+tests {
+  test("completes the turn and returns an answer", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.session_id).to.be.a("string");
+    expect(res.body.status).to.equal("completed");
+    expect(res.body.output_text).to.be.a("string");
+  });
+}
+
+docs {
+  The payoff: one agent turn. Like 02 this goes to the instance's own URL on the edge, not
+  api.agent37.com, with the same sk_live_ key.
+
+  Omit session_id to start a conversation; the reply carries the session_id the gateway minted,
+  which you pass back to continue the thread (you send only the new input, never the transcript).
+  The post-response script saves it to the sessionId env var so 04 Continue Conversation can
+  follow up. stream defaults to false, so this returns the finished response as one JSON body:
+  { id, session_id, status, output_text, usage, ... }. A failed turn still returns HTTP 200 with
+  status "failed" and an error set, so branch on status, not the HTTP code. If output_text is
+  empty, the instance has no managed budget — recreate it with budget.topup_micros (see 01).
+}

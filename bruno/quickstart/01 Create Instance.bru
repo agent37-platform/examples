@@ -1,0 +1,53 @@
+meta {
+  name: 01 Create Instance
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/instances
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "bruno quickstart",
+    "budget": { "topup_micros": 1000000 }
+  }
+}
+
+script:post-response {
+  if (res.status === 201 && res.body && res.body.id) {
+    bru.setEnvVar("instanceId", res.body.id, { persist: true });
+  }
+}
+
+tests {
+  test("creates a running instance", function () {
+    expect(res.status).to.equal(201);
+    expect(res.body.id).to.be.a("string");
+    expect(res.body.status).to.equal("running");
+  });
+}
+
+docs {
+  Spins up a fresh agent37-hermes instance and saves its id to the instanceId env var
+  (persisted), which every request after this one reuses. This is the control-plane call: it
+  goes to api.agent37.com. The chat requests below go somewhere else entirely — the instance's
+  own URL — using the same sk_live_ key.
+
+  budget.topup_micros funds managed LLM calls for this instance ($1 = 1,000,000 micros). Leave
+  it out and the instance is created with a $0 budget: the agent runs but its replies come back
+  empty. Creating an instance also debits your prepaid workspace wallet for compute, so fund the
+  wallet first (see README).
+
+  Other optional fields: template (defaults to agent37-hermes), resources, user. status comes
+  back "running" once the container is up — but the agent inside still needs a moment to boot,
+  which is what 02 Wait for Ready checks.
+}

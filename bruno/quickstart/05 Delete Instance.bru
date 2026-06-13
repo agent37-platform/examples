@@ -1,0 +1,28 @@
+meta {
+  name: 05 Delete Instance
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/instances/{{instanceId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+tests {
+  test("deletes the instance", function () {
+    expect(res.status).to.equal(200);
+    expect(res.body.deleted).to.equal(true);
+  });
+}
+
+docs {
+  Back to the control plane (api.agent37.com): tears down the instance you created. Examples run
+  against production with real money — an idle instance keeps billing compute — so delete it when
+  you are done. You get an hour-grain prorated refund for the unused compute.
+}
