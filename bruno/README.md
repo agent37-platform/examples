@@ -12,7 +12,7 @@ Agent37 API end to end.
 ## Use it
 
 1. Install Bruno, then **Open Collection** → select this `bruno/` folder.
-2. Copy `environments/agent37.example.bru` to `environments/agent37.bru` (gitignored), pick the **agent37** environment (top-right), and paste your `sk_live_` key into `token`.
+2. Copy `environments/agent37.example.bru` to `environments/agent37.bru` (gitignored — **edit the copy, not the example file**), pick the **agent37** environment (top-right), and paste your `sk_live_` key into `token`. That key is the only thing you set: `baseUrl` (`api.agent37.com`) and `proxyDomain` (`agent37.app`) are built-in collection defaults, and `instanceId`/`sessionId` fill themselves in as you run the steps.
 3. Run `quickstart` in order:
    - **01 Create Instance** — creates an `agent37-hermes` instance and saves `instanceId`.
    - **02 Wait for Ready** — click Send until it returns `200 { ok: true }`. The agent takes a moment to boot (502/503 until then; a minute or two on a cold host).
@@ -27,7 +27,7 @@ The same `sk_live_` key talks to two surfaces:
 - **Control plane** — `https://api.agent37.com/v1/*` manages instances (`01`, `05`).
 - **Agent (data) plane** — `https://{instanceId}.agent37.app/v1/*` talks to one instance's agent (`02`, `03`, `04`).
 
-`01 Create Instance` returns the `instanceId` that the data-plane requests slot into their URL.
+`01 Create Instance` returns the `instanceId` that the data-plane requests slot into their URL. Both hosts come from collection-level defaults (`baseUrl` and `proxyDomain`), so they resolve out of the box — the only thing you set is your `token`.
 
 ## Real money
 

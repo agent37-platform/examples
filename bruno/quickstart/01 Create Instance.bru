@@ -32,10 +32,6 @@ body:json {
   }
 }
 
-vars:pre-request {
-  baseUrl: https://api.agent37.com
-}
-
 script:post-response {
   if (res.status === 201 && res.body && res.body.id) {
     bru.setEnvVar("instanceId", res.body.id, { persist: true });

@@ -23,7 +23,7 @@ body:json {
 
 script:post-response {
   if (res.body && res.body.session_id) {
-    bru.setEnvVar("sessionId", res.body.session_id);
+    bru.setEnvVar("sessionId", res.body.session_id, { persist: true });
   }
 }
 

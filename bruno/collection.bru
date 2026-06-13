@@ -1,0 +1,17 @@
+vars:pre-request {
+  baseUrl: https://api.agent37.com
+  proxyDomain: agent37.app
+}
+
+docs {
+  Collection-level defaults that every request inherits, so the quickstart works
+  the moment you open it — the only thing you set yourself is your sk_live_ token.
+
+  - baseUrl     — control plane host. POST/DELETE /v1/instances live here (01, 05).
+  - proxyDomain — data plane domain. Each instance answers at
+                  https://{instanceId}.agent37.app, so the agent requests (02, 03,
+                  04) target https://{{instanceId}}.{{proxyDomain}}/v1/*.
+
+  instanceId and sessionId are not here on purpose: they are filled in at runtime by
+  the post-response scripts in 01 and 03 and persisted to your environment.
+}
