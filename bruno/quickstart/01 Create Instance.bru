@@ -18,10 +18,10 @@ headers {
 body:json {
   {
     "name": "test-user",
-    "template": "agent37-hermes",
+    "template": "agent37-hermes-small",
     "resources": {
-      "cpu": 2,
-      "memory": 4,
+      "cpu": 1,
+      "memory": 2,
       "disk": 6
     },
     "budget": {
@@ -54,12 +54,14 @@ docs {
   The whole body is optional — POST an empty {} and you get the defaults. The fields it sends:
   
   - name — display name for the instance. Free-form.
-  - template — which agent image to run. Defaults to agent37-hermes, the only system template.
-    Workspace-owned custom templates are referenced by name here too; you never pass a raw image ref.
-  - resources — cpu/memory must be one of the supported shapes: 2/4, 4/8, or 8/16 (vCPU / GB RAM).
-    disk is a whole number of GB inside that shape's range — 6-20 for 2/4, 20-40 for 4/8, 40-80
-    for 8/16. Omit resources to get the smallest shape (2 vCPU / 4 GB RAM / 6 GB disk). Bigger
-    shapes cost more: compute is billed per hour against your wallet.
+  - template — which agent image to run. Defaults to agent37-hermes-small (the lean image);
+    agent37-hermes adds a browser and desktop. Workspace-owned custom templates are referenced
+    by name here too; you never pass a raw image ref.
+  - resources — cpu/memory must be one of the supported shapes. agent37-hermes-small adds the
+    sub-floor 1/2 and 1/3 (vCPU / GB RAM); standard templates use 2/4, 4/8, or 8/16. disk is a
+    whole number of GB inside the shape's range. Omit resources to get the template's smallest
+    shape (1 vCPU / 2 GB RAM / 6 GB disk on agent37-hermes-small). Bigger shapes cost more:
+    compute is billed per hour against your wallet.
   - budget — managed LLM spend, in micros ($1 = 1,000,000). topup_micros is persistent headroom
     that funds chat — the $1 here covers this demo. monthly_cap_micros is an optional recurring
     monthly cap. Both default to 0, and at 0/0 the agent runs but every managed call is refused,
