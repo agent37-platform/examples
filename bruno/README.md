@@ -14,7 +14,7 @@ Agent37 API end to end.
 1. Install Bruno, then **Open Collection** → select this `bruno/` folder.
 2. Copy `environments/agent37.example.bru` to `environments/agent37.bru` (gitignored — **edit the copy, not the example file**), pick the **agent37** environment (top-right), and paste your `sk_live_` key into `token`. That key is the only thing you set: `baseUrl` (`api.agent37.com`) and `proxyDomain` (`agent37.app`) are built-in collection defaults, and `instanceId`/`sessionId` fill themselves in as you run the steps.
 3. Run `quickstart` in order:
-   - **01 Create Instance** — creates an `agent37-hermes` instance and saves `instanceId`.
+   - **01 Create Instance** — creates an `agent37-hermes-small` instance and saves `instanceId`.
    - **02 Wait for Ready** — click Send until it returns `200 { ok: true }`. The agent takes a moment to boot (502/503 until then; a minute or two on a cold host).
    - **03 Send Message** — your first agent turn; saves `sessionId`.
    - **04 Continue Conversation** — follows up on the same thread, to show sessions.
