@@ -172,10 +172,6 @@ app.post('/api/i/:id/responses', requireInstanceId, (req, res) => {
   forwardJson(res, instanceUrl(req.params.id, '/v1/responses'), { method: 'POST', body });
 });
 
-app.get('/api/i/:id/responses/:rid', requireInstanceId, (req, res) =>
-  forwardJson(res, instanceUrl(req.params.id, `/v1/responses/${encodeURIComponent(req.params.rid)}`))
-);
-
 app.get('/api/i/:id/responses/:rid/stream', requireInstanceId, (req, res) =>
   forwardSse(req, res, instanceUrl(req.params.id, `/v1/responses/${encodeURIComponent(req.params.rid)}/stream`))
 );

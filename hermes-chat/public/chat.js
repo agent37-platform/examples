@@ -36,7 +36,7 @@ async function loadModels() {
     // there is a real choice. Omitting model/provider on a turn uses the instance default.
     if (data.length > 1) {
       modelEl.innerHTML = data
-        .map((m) => `<option value="${m.id}::${m.provider ?? ''}" ${m.id === default_model ? 'selected' : ''}>${m.label}</option>`)
+        .map((m) => `<option value="${m.id}::${m.owned_by ?? ''}" ${m.id === default_model ? 'selected' : ''}>${m.label}</option>`)
         .join('');
       modelEl.hidden = false;
     }
@@ -53,10 +53,11 @@ function selectedModel() {
 
 async function loadSessions() {
   const { data } = await api.get('/sessions');
-  // The session list is metadata only (no titles), so derive one from each session's first
-  // user message. Fine at example scale; a real app stores its own titles keyed by session_id.
+  // Hermes returns a native `title` on each session (set one with PATCH /v1/sessions/{id}).
+  // For a session that doesn't have one yet, derive a label from its first user message.
   const detailed = await Promise.all(
     data.slice(0, 30).map(async (session) => {
+      if (session.title) return { ...session, title: session.title };
       try {
         const { history } = await api.get(`/sessions/${session.id}`);
         const first = history.find((message) => message.role === 'user');
@@ -236,8 +237,8 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_RECOVERY_ATTEMPTS = 8;
 const RECOVERY_DELAY_MS = 1500;
 
-// Terminal states render the same whether they arrive as a stream event or from
-// polling GET /responses/{id} after a drop.
+// Terminal states render the same whether they arrive on the live stream or in the
+// replay after a reattach.
 function renderCompleted(bubble, outputText, sawToolCalls) {
   bubble.closeThinking();
   // The terminal payload carries the authoritative full text: replace, never append.
@@ -337,42 +338,27 @@ async function sendTurn(text) {
     // Network drop mid-stream; the reattach loop below recovers.
   }
 
-  // A stream that closes without a terminal event proves nothing about the turn: it
-  // is usually still running server-side. Reattach to the response stream — it
-  // replays every event so far, then resumes live — until a terminal event arrives.
+  // A stream that closes without a terminal event proves nothing about the turn: it is
+  // usually still running server-side. Reattach to the response stream — it replays every
+  // event so far (including the terminal event, if the turn already finished), then resumes
+  // live — until a terminal event arrives. (There is no fetch-by-id; the stream is the only
+  // way to recover a turn, and the gateway retains it for a while after it finishes.)
   let attempts = 0;
   while (!outcome.sawTerminal && inFlight && attempts < MAX_RECOVERY_ATTEMPTS) {
     attempts += 1;
     if (attempts > 1) await delay(RECOVERY_DELAY_MS); // the only sleep: every retry path funnels back here
-    let final;
+    bubble.pending('Connection dropped — reattaching...');
     try {
-      bubble.pending('Checking the final reply...');
-      final = await api.get(`/responses/${inFlight.responseId}`);
-    } catch {
-      continue;
-    }
-    if (final.status === 'completed') {
-      outcome.sawTerminal = true;
-      renderCompleted(bubble, final.output_text, outcome.sawToolCalls);
-    } else if (final.status === 'cancelled') {
-      outcome.sawTerminal = true;
+      const replay = await api.stream(`/responses/${inFlight.responseId}/stream`);
+      if (!replay.headers.get('content-type')?.includes('text/event-stream')) throw new Error('not a stream');
+      // The replay re-sends every event from the start, so reset the bubble to avoid
+      // duplicating what was already rendered.
       bubble.remove();
-      addSystemNote('Stopped.');
-    } else if (final.status === 'failed') {
-      outcome.sawTerminal = true;
-      renderFailed(bubble, final.error);
-    } else {
-      // Still in_progress: reattach. Replace the bubble, because the replayed
-      // stream re-sends everything rendered so far.
-      bubble.pending('Connection dropped — reattaching...');
-      try {
-        const replay = await api.stream(`/responses/${inFlight.responseId}/stream`);
-        if (!replay.headers.get('content-type')?.includes('text/event-stream')) throw new Error('not a stream');
-        bubble.remove();
-        bubble = addMessage('assistant');
-        bubble.pending('Reattached — catching up...');
-        outcome = await consumeStream(replay, bubble);
-      } catch {}
+      bubble = addMessage('assistant');
+      bubble.pending('Reattached — catching up...');
+      outcome = await consumeStream(replay, bubble);
+    } catch {
+      // Still unreachable, or the response is no longer retained; back off and retry.
     }
   }
   if (!outcome.sawTerminal) {
