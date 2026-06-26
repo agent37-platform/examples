@@ -122,11 +122,11 @@ function requireInstanceId(req, res, next) {
 app.get('/api/instances', (req, res) => forwardJson(res, `${API_BASE}/v1/instances`));
 
 app.post('/api/instances', (req, res) => {
-  // budget.topup_micros funds managed LLM calls for this instance ($1 = 1,000,000 micros).
+  // budget.credit_micros funds managed LLM calls for this instance ($1 = 1,000,000 micros).
   // Without it the default managed budget is $0 and chat replies come back empty.
   const body = {
     name: typeof req.body?.name === 'string' && req.body.name.trim() ? req.body.name.trim().slice(0, 80) : 'hermes-chat example',
-    budget: { topup_micros: 1_000_000 },
+    budget: { credit_micros: 1_000_000 },
   };
   forwardJson(res, `${API_BASE}/v1/instances`, { method: 'POST', body: JSON.stringify(body) });
 });
