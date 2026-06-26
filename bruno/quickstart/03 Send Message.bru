@@ -46,5 +46,5 @@ docs {
   follow up. stream defaults to false, so this returns the finished response as one JSON body:
   { id, session_id, status, output_text, usage, ... }. A failed turn still returns HTTP 200 with
   status "failed" and an error set, so branch on status, not the HTTP code. If output_text is
-  empty, the instance has no managed budget — recreate it with budget.topup_micros (see 01).
+  empty, the instance has no managed budget — recreate it with budget.credit_micros (see 01).
 }
