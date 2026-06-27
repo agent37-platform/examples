@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+
+/*
+  Design tokens for the minions-clone UI. The reference is a restrained, near-monochrome
+  surface: white canvas, near-black ink, hairline gray borders, generous whitespace, and a
+  single soft-gray "active" wash on the selected nav row. Everything below is expressed as
+  Tailwind v4 @theme tokens so it shows up as utilities (bg-background, text-foreground,
+  border-border, rounded-xl, etc.).
+*/
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0a0a;
+
+  /* Soft gray washes for hover/active rows and chips. */
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-subtle: #a1a1aa;
+
+  --color-accent: #f4f4f5;
+  --color-accent-foreground: #0a0a0a;
+
+  --color-border: #ececec;
+  --color-input: #e4e4e7;
+  --color-ring: #d4d4d8;
+
+  /* Status accents for task chips/badges (kept muted to fit the palette). */
+  --color-success: #16a34a;
+  --color-running: #2563eb;
+  --color-danger: #dc2626;
+  --color-warning: #d97706;
+
+  --radius-lg: 0.875rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Thin, unobtrusive scrollbars to match the minimal aesthetic. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-input) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-input);
+    border-radius: 9999px;
+  }
+}
+
+/* A blinking caret used by the streaming view while tokens arrive. */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.animate-caret {
+  animation: caret-blink 1s step-end infinite;
+}
