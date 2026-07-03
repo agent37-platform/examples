@@ -45,7 +45,7 @@ function render(instances) {
     });
     tr.querySelector('[data-delete]').addEventListener('click', async (event) => {
       event.stopPropagation();
-      if (!confirm(`Delete instance ${instance.id}? Unused prepaid time is refunded.`)) return;
+      if (!confirm(`Delete instance ${instance.id}? Billing ends immediately.`)) return;
       try {
         await api(`/api/instances/${instance.id}`, { method: 'DELETE' });
         refresh();
