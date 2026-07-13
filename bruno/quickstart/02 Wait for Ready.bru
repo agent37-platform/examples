@@ -11,7 +11,7 @@ get {
 }
 
 headers {
-  Authorization: Bearer {{token}}
+  X-Agent37-Key: {{token}}
 }
 
 tests {
@@ -24,7 +24,7 @@ tests {
 docs {
   The first request that talks to the instance directly instead of api.agent37.com: it hits the
   instance's own URL on the public edge (https://{instanceId}.agent37.app), authenticated with
-  the same sk_live_ key.
+  the same sk_live_ key sent in the X-Agent37-Key header instead of Authorization: Bearer.
 
   01 Create Instance returns once the container is "running", but the agent inside needs a moment
   more to come up. While it is still booting this returns 502 or 503 — click Send again every few

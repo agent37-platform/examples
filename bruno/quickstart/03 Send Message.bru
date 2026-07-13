@@ -11,7 +11,7 @@ post {
 }
 
 headers {
-  Authorization: Bearer {{token}}
+  X-Agent37-Key: {{token}}
   Content-Type: application/json
 }
 
@@ -38,7 +38,7 @@ tests {
 
 docs {
   The payoff: one agent turn. Like 02 this goes to the instance's own URL on the edge, not
-  api.agent37.com, with the same sk_live_ key.
+  api.agent37.com, with the same sk_live_ key in the X-Agent37-Key header.
 
   Omit session_id to start a conversation; the reply carries the session_id the gateway minted,
   which you pass back to continue the thread (you send only the new input, never the transcript).
