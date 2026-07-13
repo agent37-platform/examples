@@ -22,10 +22,10 @@ Agent37 API end to end.
 
 ## Two URLs, one key
 
-The same `sk_live_` key talks to two surfaces:
+The same `sk_live_` key talks to two surfaces, each with its own header:
 
-- **Control plane** — `https://api.agent37.com/v1/*` manages instances (`01`, `05`).
-- **Agent (data) plane** — `https://{instanceId}.agent37.app/v1/*` talks to one instance's agent (`02`, `03`, `04`).
+- **Control plane** — `https://api.agent37.com/v1/*` manages instances (`01`, `05`). Authenticated with `Authorization: Bearer {{token}}`.
+- **Agent (data) plane** — `https://{instanceId}.agent37.app/v1/*` talks to one instance's agent (`02`, `03`, `04`). Takes the same key, raw, in the `X-Agent37-Key` header.
 
 `01 Create Instance` returns the `instanceId` that the data-plane requests slot into their URL. Both hosts come from collection-level defaults (`baseUrl` and `proxyDomain`), so they resolve out of the box — the only thing you set is your `token`.
 
