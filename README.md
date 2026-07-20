@@ -16,7 +16,7 @@ Runnable example apps built on the [Agent37 Agents API](https://www.agent37.com/
 
 ## Building a full app?
 
-These examples are small, single-purpose teaching apps. If you want a complete application to fork and rebrand — a multi-tenant dashboard with sign-in, workspaces, and per-user agents — start from the [Agent37 white-label template](https://github.com/agent37-platform/whitelabel) and click **Use this template**.
+These examples are small, single-purpose teaching apps. If you want a complete application to fork and rebrand — a multi-tenant dashboard with sign-in, workspaces, and per-user agents — start from the [Agent37 white-label template](https://github.com/agent37-platform/starter-kit) and click **Use this template**.
 
 ## Building your own
 
