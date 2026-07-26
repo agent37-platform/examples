@@ -18,7 +18,7 @@ Runnable example apps built on the [Agent37 Agents API](https://www.agent37.com/
 
 These examples are small, single-purpose teaching apps. If you want a complete application to fork and rebrand — a multi-tenant dashboard with sign-in, workspaces, and per-user agents — fork the [Agent37 Starter Kit](https://github.com/agent37-platform/starter-kit).
 
-To change what the agent itself can do — your own CLIs, skills, or model baked into its image — start from [custom-agent-image](https://github.com/agent37-platform/custom-agent-image) (a GitHub template repo) and its [guide](https://www.agent37.com/docs/agents-api/custom-image).
+To change what the agent itself can do — your own CLIs and skills baked into its image — start from [custom-agent-image](https://github.com/agent37-platform/custom-agent-image) (the same app, running on an image it builds) and its [guide](https://www.agent37.com/docs/agents-api/custom-image).
 
 ## Building your own
 
