@@ -10,7 +10,7 @@ The authoritative Agent37 Agents API reference is `https://www.agent37.com/docs/
 
 One folder per example, each fully self-contained (own `package.json`, own `README.md`, own `.env.example`). No shared code between examples; an example must be copy-paste-able as a starting point without dragging siblings along.
 
-`custom-images/` holds image recipes instead of apps: one folder per image (`Dockerfile`, any files it COPYs, own `README.md`, no `package.json`), each buildable as-is with `npx agent37 templates build . --name <name>`. Before merging a recipe, run that build and create a real instance from it — a recipe that has not booted is not an example. Every example lands in the matching table in the root `README.md`.
+`custom-images/` holds image recipes instead of apps: one folder per image (`Dockerfile`, any files it COPYs, own `README.md`, no `package.json`), each buildable as-is with `npx agent37 templates build . --name <name>`. Before merging a recipe, run that build and create a real instance from it; a recipe that has not booted is not an example. Every example lands in the matching table in the root `README.md`.
 
 ## Conventions
 

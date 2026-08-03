@@ -1,6 +1,6 @@
 # Agent37 Cookbook
 
-Runnable examples for the [Agent37 Agents API](https://www.agent37.com/docs): example apps, custom agent images, and full applications to fork. Each folder is self-contained — put your API key in `.env`, run it, and you have a working app.
+Runnable examples for the [Agent37 Agents API](https://www.agent37.com/docs): example apps, custom agent images, and full applications to fork. Each folder is self-contained: put your API key in `.env`, run it, and you have a working app.
 
 ## Before you start
 
@@ -18,11 +18,11 @@ Small, single-purpose apps that each teach one part of the API.
 
 ## Custom images
 
-Dockerfiles that change what the agent itself is. Each folder builds into a [workspace template](https://www.agent37.com/docs/agents-api/custom-image) with one command — `npx agent37 templates build . --name <name>` — no local Docker needed.
+Dockerfiles that change what the agent itself is. Each folder builds into a [workspace template](https://www.agent37.com/docs/agents-api/custom-image) with one command, `npx agent37 templates build . --name <name>`, and no local Docker needed.
 
 | Image | What it shows |
 |---|---|
-| [hermes-vnc-desktop](./custom-images/hermes-vnc-desktop) | A live desktop view: watch the agent open Chromium, click, and fill forms in real time from any browser tab — embeddable in your own app. |
+| [hermes-vnc-desktop](./custom-images/hermes-vnc-desktop) | A live desktop view: watch the agent open Chromium, click, and fill forms in real time from any browser tab, embeddable in your own app. |
 
 ## Full apps to fork
 
