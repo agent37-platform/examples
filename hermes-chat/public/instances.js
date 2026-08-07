@@ -113,7 +113,7 @@ createBtn.addEventListener('click', async () => {
     statusEl.textContent = '';
   } catch (err) {
     statusEl.textContent = err.code === 'insufficient_balance'
-      ? 'Your wallet balance is too low. The smallest instance debits about $0.16 at create. Top up at agent37.com/dashboard/cloud/billing.'
+      ? 'Your wallet balance is too low. Creating the smallest instance requires about $0.16 of balance (one day of compute; nothing is debited). Top up at agent37.com/dashboard/cloud/billing.'
       : `Create failed: ${err.message} (refresh the list, the instance may still appear)`;
   }
   pendingCreate = null;

@@ -23,7 +23,15 @@ if (!API_KEY) {
 // Instance ids are 10-char DNS labels; validating here keeps arbitrary hosts out of the
 // instance-URL template below.
 const INSTANCE_ID = /^[a-z0-9]{10}$/;
+// One key, two planes, one header each: the Hosting API takes Authorization: Bearer, while
+// instance URLs take the raw key as X-Agent37-Key (the platform passes Authorization through
+// to the app inside the instance).
 const AUTH_HEADERS = { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' };
+const AGENT_HEADERS = { 'X-Agent37-Key': API_KEY, 'Content-Type': 'application/json' };
+
+function headersFor(url) {
+  return url.startsWith(API_BASE) ? AUTH_HEADERS : AGENT_HEADERS;
+}
 
 const app = express();
 app.use(express.json());
@@ -43,7 +51,7 @@ function normalizeError(status, body) {
 async function forwardJson(res, url, init = {}) {
   let upstream;
   try {
-    upstream = await fetch(url, { ...init, headers: { ...AUTH_HEADERS, ...init.headers } });
+    upstream = await fetch(url, { ...init, headers: { ...headersFor(url), ...init.headers } });
   } catch (err) {
     return res.status(502).json({ error: { code: 'upstream_unreachable', message: String(err?.message || err) } });
   }
@@ -62,8 +70,8 @@ async function forwardJson(res, url, init = {}) {
 }
 
 // Pipe an upstream SSE response through untouched. The browser cannot call the instance
-// directly: EventSource cannot POST or set the Authorization header, and a fetch from the
-// page would expose the key.
+// directly: EventSource cannot POST or send custom headers like X-Agent37-Key, and a fetch
+// from the page would expose the key.
 async function forwardSse(req, res, url, init = {}) {
   const controller = new AbortController();
   // res 'close' (not req 'close', which fires once the request body is consumed) signals the
@@ -75,7 +83,7 @@ async function forwardSse(req, res, url, init = {}) {
   try {
     upstream = await fetch(url, {
       ...init,
-      headers: { ...AUTH_HEADERS, Accept: 'text/event-stream', ...init.headers },
+      headers: { ...headersFor(url), Accept: 'text/event-stream', ...init.headers },
       signal: controller.signal,
     });
   } catch (err) {
@@ -140,7 +148,7 @@ app.delete('/api/instances/:id', requireInstanceId, (req, res) =>
 app.get('/api/instances/:id/ready', requireInstanceId, async (req, res) => {
   try {
     const upstream = await fetch(instanceUrl(req.params.id, '/v1/health'), {
-      headers: AUTH_HEADERS,
+      headers: AGENT_HEADERS,
       signal: AbortSignal.timeout(8000),
     });
     const body = upstream.ok ? await upstream.json().catch(() => null) : null;
