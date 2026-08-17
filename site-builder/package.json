@@ -1,0 +1,17 @@
+{
+  "name": "site-builder",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A website-builder app on Agent37: chat with an agent that builds a site and publishes it at a public URL",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
