@@ -204,26 +204,32 @@ app.post('/api/publish', async (req, res) => {
     const norm = normalizeError(instance.res.status, instance.body);
     return res.status(norm.status).json(norm.body);
   }
-  const expected = instance.body?.metadata?.site_publish_token_sha256;
-  const presented = sha256(token);
-  if (typeof expected !== 'string' || expected.length !== presented.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(presented))) {
+  // Compare as buffers, guarded on byte length: timingSafeEqual throws on a length
+  // mismatch, and string .length counts UTF-16 units, not bytes.
+  const expected = Buffer.from(String(instance.body?.metadata?.site_publish_token_sha256 ?? ''));
+  const presented = Buffer.from(sha256(token));
+  if (expected.length !== presented.length || !crypto.timingSafeEqual(expected, presented)) {
     return res.status(403).json({ error: { code: 'forbidden', message: 'The publish token does not match this instance.' } });
   }
 
   // Create the public port. 409 means it already exists, which for "publish" means
   // success: return the existing URL so republishing is idempotent.
-  const created = await agent37(`${API_BASE}/v1/instances/${instanceId}/public-ports`, {
-    method: 'POST',
-    body: JSON.stringify({ port, label: 'site-builder site' }),
-  });
-  if (created.res.ok) return res.json({ url: created.body.url });
-  if (created.body?.error?.code === 'public_port_exists' || created.res.status === 409) {
-    const list = await agent37(`${API_BASE}/v1/instances/${instanceId}/public-ports`);
-    const existing = list.body?.data?.find((entry) => entry.port === port);
-    if (existing) return res.json({ url: existing.url });
+  try {
+    const created = await agent37(`${API_BASE}/v1/instances/${instanceId}/public-ports`, {
+      method: 'POST',
+      body: JSON.stringify({ port, label: 'site-builder site' }),
+    });
+    if (created.res.ok) return res.json({ url: created.body.url });
+    if (created.body?.error?.code === 'public_port_exists' || created.res.status === 409) {
+      const list = await agent37(`${API_BASE}/v1/instances/${instanceId}/public-ports`);
+      const existing = list.body?.data?.find((entry) => entry.port === port);
+      if (existing) return res.json({ url: existing.url });
+    }
+    const norm = normalizeError(created.res.status, created.body);
+    res.status(norm.status).json(norm.body);
+  } catch (err) {
+    res.status(502).json({ error: { code: 'upstream_unreachable', message: String(err?.message || err) } });
   }
-  const norm = normalizeError(created.res.status, created.body);
-  res.status(norm.status).json(norm.body);
 });
 
 // ---- Agent API: chat, proxied to the instance's gateway ----
@@ -245,8 +251,6 @@ function publishBrief() {
     '',
   ].join('\n');
 }
-
-app.get('/api/i/:id/models', requireInstanceId, (req, res) => forwardJson(res, instanceUrl(req.params.id, '/v1/models')));
 
 app.get('/api/i/:id/sessions', requireInstanceId, (req, res) => forwardJson(res, instanceUrl(req.params.id, '/v1/sessions')));
 
