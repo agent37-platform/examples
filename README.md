@@ -15,6 +15,7 @@ Small, single-purpose apps that each teach one part of the API.
 |---|---|
 | [hermes-chat](./hermes-chat) | A streaming chat app on a Hermes agent instance: create and manage instances, stream replies token by token, sessions, cancel. |
 | [site-builder](./site-builder) | A website builder: the user asks the agent for a site, the agent builds and serves it on the instance, and your server publishes it at a permanent public URL. The owner-consent pattern for public ports. |
+| [claude-code-byo-model](./claude-code-byo-model) | Claude Code on your own OpenRouter key: override `ANTHROPIC_BASE_URL` in instance env so model calls bill your OpenRouter account, with per-role model picks. |
 
 ## Custom images
 
