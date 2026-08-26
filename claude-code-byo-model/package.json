@@ -1,0 +1,13 @@
+{
+  "name": "claude-code-byo-model",
+  "private": true,
+  "description": "Claude Code on an Agent37 instance with model calls routed to your own OpenRouter key",
+  "scripts": {
+    "create": "node agent.js create",
+    "chat": "node agent.js chat",
+    "delete": "node agent.js delete"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
