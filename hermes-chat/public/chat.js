@@ -277,6 +277,9 @@ async function consumeStream(response, bubble) {
         bubble.closeThinking();
         bubble.appendText(data.text);
         break;
+      case 'response.tool_call.generating':
+        bubble.pending(`Writing a ${data.tool} call...`);
+        break;
       case 'response.tool_call.started':
         sawToolCalls = true;
         bubble.tool(data.label || data.tool, 'running');
