@@ -26,7 +26,7 @@ A quick tunnel gets a new URL each run. That is fine here: the URL is read from 
 
 ## What it costs
 
-Creating an instance requires about $0.16 of wallet balance (one day of compute) but debits nothing, and grants the instance a $1 managed LLM budget. Compute is metered per minute at $4.94 per month while the instance runs, and deleting it ends billing on the spot, so trying this out costs cents.
+Creating an instance requires about $0.16 of wallet balance (one day of compute) but debits nothing, and grants the instance a $1 managed LLM budget. Compute is metered per minute at $4.76 per month while the instance runs, and deleting it ends billing on the spot, so trying this out costs cents.
 
 ## How it works
 

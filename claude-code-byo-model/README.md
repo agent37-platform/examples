@@ -42,6 +42,6 @@ The chat API's `model` field selects the role: `"model": "opus"` runs whatever `
 
 ## What it costs
 
-Two separate meters. Agent37 bills compute per minute ($4.94 per month for the smallest instance) from your wallet; OpenRouter bills every model call to your OpenRouter credit. Your Agent37 managed-LLM budget is not used at all. `delete` ends the compute meter on the spot.
+Two separate meters. Agent37 bills compute per minute ($4.76 per month for the smallest instance) from your wallet; OpenRouter bills every model call to your OpenRouter credit. Your Agent37 managed-LLM budget is not used at all. `delete` ends the compute meter on the spot.
 
 Full API reference: [agent37.com/docs](https://www.agent37.com/docs). For coding agents: [agent37.com/docs/llms-full.txt](https://www.agent37.com/docs/llms-full.txt).
