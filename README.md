@@ -5,7 +5,7 @@ Runnable examples for the [Agent37 Agents API](https://www.agent37.com/docs): ex
 ## Before you start
 
 1. Mint an API key at [agent37.com/dashboard/cloud/api-keys](https://www.agent37.com/dashboard/cloud/api-keys).
-2. Add at least $10 to your wallet at [agent37.com/dashboard/cloud/billing](https://www.agent37.com/dashboard/cloud/billing). The smallest instance costs $4.94 per month, billed a day at a time, and the rest covers managed LLM usage.
+2. Add at least $10 to your wallet at [agent37.com/dashboard/cloud/billing](https://www.agent37.com/dashboard/cloud/billing). The smallest instance costs $4.76 per month, metered per minute, and the rest covers managed LLM usage.
 
 ## Example apps
 
