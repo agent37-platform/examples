@@ -43,7 +43,7 @@ async function loadSiteLink() {
   try {
     const res = await fetch('/api/instances');
     const { data } = await res.json();
-    const site = (data.find((instance) => instance.id === instanceId)?.public_ports || [])[0];
+    const site = (data.find((instance) => instance.id === instanceId)?.public_ports || []).find((entry) => entry.label === 'site-builder site');
     siteLinkEl.hidden = !site;
     if (site) siteLinkEl.href = site.url;
   } catch {} // the link is a convenience; chat works without it

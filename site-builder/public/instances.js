@@ -22,10 +22,10 @@ function statusChip(instance) {
   return `<span class="chip">${instance.status}</span>`;
 }
 
-// Public ports ride on every instance read; the agent publishes on one port, so the first
-// entry is the site.
+// Public ports ride on every instance read; the publish route labels the agent's port, and
+// Hermes instances also carry a platform-minted Telegram webhook port, so match on the label.
 function siteCell(instance) {
-  const site = (instance.public_ports || [])[0];
+  const site = (instance.public_ports || []).find((entry) => entry.label === 'site-builder site');
   if (!site) return '<span class="muted">Not published</span>';
   return `<a href="${site.url}" target="_blank" rel="noopener" data-site-link>${new URL(site.url).hostname}</a>`;
 }
