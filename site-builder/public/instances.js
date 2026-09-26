@@ -23,7 +23,7 @@ function statusChip(instance) {
 }
 
 // Public ports ride on every instance read; the publish route labels the agent's port, and
-// Hermes instances also carry a platform-minted Telegram webhook port, so match on the label.
+// agent instances also carry a platform-minted Telegram webhook port, so match on the label.
 function siteCell(instance) {
   const site = (instance.public_ports || []).find((entry) => entry.label === 'site-builder site');
   if (!site) return '<span class="muted">Not published</span>';
