@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connected | Build your own Instinct</title>
+  <link rel="icon" href="/avatar.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="onboard">
+    <section class="card" style="text-align: center">
+      <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true">
+        <circle cx="22" cy="22" r="21" fill="#e4efeb" />
+        <path d="M14 22.5l5.5 5.5L30 17" fill="none" stroke="#3e6e61" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <h2 id="title" style="margin-top: 16px">Connected.</h2>
+      <p class="muted">You can go back to your messages now.</p>
+      <p><a class="faint" href="/app#connectors">Open your workspace</a></p>
+    </section>
+  </main>
+  <script>
+    const name = new URLSearchParams(location.search).get('name');
+    if (name) document.getElementById('title').textContent = `${name} connected.`;
+  </script>
+</body>
+</html>

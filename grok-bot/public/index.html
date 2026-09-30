@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Build your own Grok Bot · Agent37 example</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="onboarding" class="center-screen" hidden>
+    <div class="card intro-card">
+      <div class="intro-mark" aria-hidden="true"></div>
+      <h1>Meet your future teammates</h1>
+      <p class="muted">Bots are AI teammates with a name and a job. They all share one computer in the cloud, with its own files, browser and terminal, and they keep working after you close this tab.</p>
+      <form id="setup-form" class="stack">
+        <label>What should your Bots call you?
+          <input id="setup-name" autocomplete="given-name" placeholder="Your first name" maxlength="40" required />
+        </label>
+        <button class="primary big" id="setup-go">Start your computer</button>
+      </form>
+      <p class="muted small" id="setup-status"></p>
+    </div>
+  </div>
+
+  <div id="starting" class="center-screen" hidden>
+    <div class="card intro-card">
+      <div class="spinner" aria-hidden="true"></div>
+      <h1>Starting your computer</h1>
+      <p class="muted" id="starting-note">The first boot takes a minute or two. After that it wakes in seconds.</p>
+      <button class="danger" id="starting-delete" hidden>Delete my computer</button>
+    </div>
+  </div>
+
+  <div id="presets" class="center-screen" hidden>
+    <div class="card presets-card">
+      <h1>Pick your first teammate</h1>
+      <p class="muted">Start from a suggestion or make your own. You can add more Bots any time.</p>
+      <div id="preset-grid" class="preset-grid"></div>
+      <button class="link" id="preset-custom">Create your own</button>
+    </div>
+  </div>
+
+  <div id="app" class="app" hidden>
+    <aside class="sidebar">
+      <div class="side-top">
+        <label class="search">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input id="search" placeholder="Search" />
+        </label>
+        <button class="icon-btn" id="new-bot" title="New Bot" aria-label="New Bot">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="side-scroll">
+        <div class="side-label">Group chats</div>
+        <div id="group-row"></div>
+        <div class="side-label">Bots</div>
+        <div id="bot-list"></div>
+      </div>
+      <div class="side-bottom">
+        <div class="profile"><span class="user-avatar" id="user-avatar"></span><span id="user-name"></span></div>
+        <button class="icon-btn" id="bell" title="Notifications" aria-label="Notifications">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 14V9a5 5 0 0110 0v5l1.5 1.5h-13zM8.5 17.5a1.8 1.8 0 003 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <span class="badge" id="bell-badge" hidden></span>
+        </button>
+        <button class="icon-btn" id="settings" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.5v2.2M10 15.3v2.2M2.5 10h2.2M15.3 10h2.2M4.7 4.7l1.6 1.6M13.7 13.7l1.6 1.6M4.7 15.3l1.6-1.6M13.7 6.3l1.6-1.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div class="popover" id="notif-popover" hidden></div>
+    </aside>
+
+    <main class="center">
+      <header class="chat-header">
+        <div class="pill" id="header-pill"></div>
+        <div class="header-actions">
+          <button class="icon-btn" id="toggle-pane" title="Computer and routines" aria-label="Computer and routines">
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="10" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 17h6M10 13.5V17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <button class="icon-btn" id="more" title="More" aria-label="More">
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="5" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <div class="popover menu" id="more-menu" hidden></div>
+        </div>
+      </header>
+      <div class="thread" id="thread"></div>
+      <div class="mention-bar" id="mention-bar" hidden></div>
+      <form class="composer" id="composer">
+        <button type="button" class="round-btn ghost" id="new-convo" title="New conversation" aria-label="New conversation">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Message"></textarea>
+        <button class="round-btn" id="send" title="Send" aria-label="Send">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 16V4M5 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button type="button" class="round-btn" id="stop" title="Stop now" aria-label="Stop now" hidden>
+          <svg viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><rect x="4" y="4" width="12" height="12" rx="2" fill="currentColor"/></svg>
+        </button>
+      </form>
+    </main>
+
+    <aside class="pane" id="pane">
+      <section class="computer" id="computer-slot" hidden>
+        <div class="computer-bar">
+          <span class="computer-name"><span id="screen-avatar"></span><b id="screen-title">Screen</b></span>
+          <span class="computer-badge" id="computer-badge">Connecting</span>
+          <span class="spacer"></span>
+          <button class="computer-take" id="computer-take">Take over</button>
+          <button class="icon-btn computer-close" id="computer-close" title="Close" aria-label="Close">
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="computer-screen"><div class="computer-view" id="computer-view"></div><span class="computer-note" id="computer-note">Connecting to the computer...</span></div>
+        <button class="computer-cover" id="computer-cover" aria-label="Open the screen"></button>
+      </section>
+      <section class="pane-section">
+        <div class="pane-head"><span>Routines</span><button class="chip-btn" id="add-routine">New</button></div>
+        <div id="routine-list" class="routine-list"></div>
+      </section>
+      <section class="pane-section" id="notes-section">
+        <div class="pane-head"><span>Notes</span><button class="chip-btn" id="open-notes">Open</button></div>
+        <p class="muted small mono" id="notes-path"></p>
+      </section>
+    </aside>
+
+    <div class="drawer" id="drawer" hidden></div>
+  </div>
+
+  <div class="modal-backdrop" id="modal" hidden><div class="modal" id="modal-box"></div></div>
+  <div class="toasts" id="toasts"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

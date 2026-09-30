@@ -1,0 +1,17 @@
+{
+  "name": "dots",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Build your own Dots: a personal agent on Agent37 that owns ongoing responsibilities, keeps its own schedule, and messages you first",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}

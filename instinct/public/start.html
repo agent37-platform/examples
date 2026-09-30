@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Get started | Build your own Instinct</title>
+  <link rel="icon" href="/avatar.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="onboard">
+    <form id="you" class="card hidden">
+      <h2>Let's set you up.</h2>
+      <p class="muted">Your assistant gets its own computer, iMessage line, and email address.</p>
+      <label for="name">Your name</label>
+      <input id="name" autocomplete="given-name" required />
+      <label for="phone">Your mobile number</label>
+      <input id="phone" type="tel" autocomplete="tel" placeholder="+1 415 555 0100" required />
+      <label for="owner-email">Your email</label>
+      <input id="owner-email" type="email" autocomplete="email" placeholder="you@example.com" required />
+      <p class="hint">Only this number can text or call your assistant, and only mail from this address reaches it.</p>
+      <label for="agent-name">Name your assistant</label>
+      <input id="agent-name" value="Juniper" required />
+      <p id="you-error" class="error-text"></p>
+      <div class="actions">
+        <a class="faint" href="/">Back</a>
+        <button class="primary" type="submit">Continue</button>
+      </div>
+    </form>
+
+    <section id="setup" class="card hidden">
+      <h2 id="setup-title">Setting up.</h2>
+      <p class="muted">About a minute. You can leave this page; setup keeps going.</p>
+      <ul id="steps" class="steps"></ul>
+      <p id="setup-error" class="error-text"></p>
+      <div class="actions">
+        <span></span>
+        <button id="retry" class="hidden" type="button">Try again</button>
+      </div>
+    </section>
+
+    <section id="texting" class="card hidden">
+      <h2 id="texting-title">Start texting.</h2>
+      <div id="texting-body"></div>
+      <div class="actions">
+        <span></span>
+        <a class="link-cta" href="/app">Go to your workspace &rarr;</a>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { renderTexting } from '/texting.js';
+
+    const STEPS = [
+      ['computer', 'Its own computer'],
+      ['line', 'A phone line and an inbox'],
+      ['imessage', 'iMessage, email, and calls'],
+      ['persona', 'Its personality'],
+      ['restart', 'Waking it up'],
+      ['texting', 'Your connect code'],
+    ];
+    const $ = (id) => document.getElementById(id);
+    const show = (id) => {
+      for (const section of ['you', 'setup', 'texting']) $(section).classList.toggle('hidden', section !== id);
+    };
+
+    function renderSetup(me) {
+      $('setup-title').textContent = `Setting up ${me.agentName}.`;
+      $('steps').innerHTML = STEPS.map(([key, label]) => {
+        const state = me.setup.done.includes(key) ? 'done' : me.setup.step === key && !me.setup.error ? 'active' : '';
+        return `<li class="${state}"><span class="dot"></span>${label}</li>`;
+      }).join('');
+      $('setup-error').textContent = me.setup.error ? `Something went wrong: ${me.setup.error}` : '';
+      $('retry').classList.toggle('hidden', !me.setup.error);
+    }
+
+    async function refresh() {
+      const res = await fetch('/api/me');
+      if (res.status === 401) return show('you');
+      const me = await res.json();
+      if (me.setup.step === 'ready') {
+        $('texting-title').textContent = `Start texting ${me.agentName}.`;
+        renderTexting($('texting-body'), me);
+        return show('texting');
+      }
+      renderSetup(me);
+      show('setup');
+      if (!me.setup.error) setTimeout(refresh, 2000);
+    }
+
+    $('you').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      $('you-error').textContent = '';
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: $('name').value,
+          phone: $('phone').value,
+          ownerEmail: $('owner-email').value,
+          agentName: $('agent-name').value,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok && res.status !== 409) return ($('you-error').textContent = body?.error?.message || 'Could not sign up.');
+      refresh();
+    });
+
+    $('retry').addEventListener('click', async () => {
+      await fetch('/api/setup/retry', { method: 'POST' });
+      refresh();
+    });
+
+    refresh();
+  </script>
+</body>
+</html>

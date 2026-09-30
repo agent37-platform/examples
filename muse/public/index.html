@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FDFEFF">
+  <title>Build your own Muse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Shared paint for every mascot on the page; data-avatar on <html> picks the color. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <radialGradient id="m-sky" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#E3EFFE"/><stop offset="1" stop-color="#9DC3F2"/></radialGradient>
+      <radialGradient id="m-peach" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#FFE9DD"/><stop offset="1" stop-color="#F4B393"/></radialGradient>
+      <radialGradient id="m-mint" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#E0F6EC"/><stop offset="1" stop-color="#93D5B3"/></radialGradient>
+      <radialGradient id="m-lilac" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#EEE8FD"/><stop offset="1" stop-color="#BBA8EE"/></radialGradient>
+    </defs>
+  </svg>
+
+  <template id="mascot">
+    <svg class="mascot" viewBox="0 0 100 100" aria-hidden="true">
+      <g class="m-bob">
+        <g class="m-sprout">
+          <path d="M50 24 C50 17 49 13 47 9" stroke="#3E9E63" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+          <path d="M47 11 C40 5 31 7 29 12 C35 16 43 15 47 11 Z" fill="#6CC28A"/>
+          <path d="M48 13 C53 5 63 5 66 9 C61 15 53 16 48 13 Z" fill="#86D39F"/>
+        </g>
+        <path class="m-body" d="M50 21 C75 21 90 39 90 60 C90 80 73 92 50 92 C27 92 10 80 10 60 C10 39 25 21 50 21 Z"/>
+        <ellipse cx="33" cy="40" rx="10" ry="6" fill="#FFFFFF" opacity=".7" transform="rotate(-24 33 40)"/>
+        <g class="m-eyes">
+          <ellipse cx="38" cy="59" rx="4.2" ry="5.6" fill="#1C2B33"/>
+          <ellipse cx="62" cy="59" rx="4.2" ry="5.6" fill="#1C2B33"/>
+          <circle cx="39.4" cy="57" r="1.4" fill="#FFFFFF"/>
+          <circle cx="63.4" cy="57" r="1.4" fill="#FFFFFF"/>
+        </g>
+        <path class="m-mouth" d="M44 70 Q50 75.5 56 70" stroke="#1C2B33" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </template>
+
+  <div id="onboarding" class="onboarding" hidden>
+    <form id="ob-form" class="ob-card">
+      <div class="mascot-slot xl"></div>
+      <h1>Meet your personal agent</h1>
+      <p class="muted">It gets its own computer, remembers you, and takes things off your plate.</p>
+      <label class="field">What should it call you?
+        <input name="your_name" required maxlength="40" placeholder="Your name" autocomplete="given-name">
+      </label>
+      <label class="field">Name your agent
+        <input name="agent_name" required maxlength="30" value="Pip">
+      </label>
+      <div class="field">Pick a look
+        <div class="swatches" data-name="avatar"></div>
+      </div>
+      <div class="field">How should it talk?
+        <div class="chips" data-name="tone">
+          <button type="button" data-value="warm" class="on">Warm</button>
+          <button type="button" data-value="casual">Casual</button>
+          <button type="button" data-value="concise">Concise</button>
+          <button type="button" data-value="funny">Funny</button>
+        </div>
+      </div>
+      <button class="primary" type="submit">Create my agent</button>
+    </form>
+    <div id="ob-progress" class="ob-card" hidden>
+      <div class="mascot-slot xl"></div>
+      <h1 id="ob-title">Setting things up</h1>
+      <ol class="steps">
+        <li data-step="creating">Setting up its own computer</li>
+        <li data-step="booting">Waking up</li>
+        <li data-step="setting_up">Learning how your app works</li>
+      </ol>
+      <p id="ob-error" class="error" hidden></p>
+      <button id="ob-retry" class="primary" type="button" hidden>Try again</button>
+      <button id="ob-reset" class="pill" type="button" hidden>Start over</button>
+    </div>
+  </div>
+
+  <div id="app" class="app" hidden>
+    <header class="top">
+      <button id="menu-btn" class="round" aria-label="Chats">
+        <svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></svg>
+      </button>
+      <button id="avatar-btn" class="avatar" aria-label="Your agent">
+        <span class="mascot-slot"></span>
+        <span class="name-pill"><strong id="agent-name"></strong><span id="agent-status"></span></span>
+      </button>
+      <button id="bell-btn" class="round" aria-label="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></svg>
+        <span id="badge" class="badge" hidden></span>
+      </button>
+    </header>
+
+    <main>
+      <section id="tab-chat" class="tab">
+        <div id="thread-chip" class="thread-chip" hidden></div>
+        <div id="messages" class="messages"></div>
+        <form id="composer" class="composer">
+          <textarea id="input" rows="1" placeholder="Message" autocomplete="off"></textarea>
+          <button id="send" type="submit" class="send" aria-label="Send">
+            <svg class="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+            <svg class="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+          </button>
+        </form>
+      </section>
+
+      <section id="tab-ideas" class="tab page" hidden>
+        <div class="page-head">
+          <h1>Ideas</h1>
+          <button id="ideas-refresh" class="round small" aria-label="New ideas">
+            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>
+          </button>
+        </div>
+        <p id="ideas-meta" class="muted"></p>
+        <div id="ideas-list" class="list"></div>
+      </section>
+
+      <section id="tab-goals" class="tab page" hidden>
+        <div class="page-head"><h1>Goals</h1></div>
+        <div id="goals-list"></div>
+        <h3 class="create-title">Create a goal</h3>
+        <div id="goal-categories" class="list plain"></div>
+      </section>
+
+      <section id="tab-library" class="tab page" hidden>
+        <div class="page-head">
+          <h1>Library</h1>
+          <button id="library-refresh" class="round small" aria-label="Refresh">
+            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>
+          </button>
+        </div>
+        <div id="library-list"></div>
+      </section>
+    </main>
+
+    <nav class="tabbar">
+      <button data-tab="chat" class="on" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M12 4c4.7 0 8.5 3.1 8.5 7s-3.8 7-8.5 7c-1 0-2-.1-2.9-.4L5 19.5l1.1-3.6C4.5 14.6 3.5 12.9 3.5 11c0-3.9 3.8-7 8.5-7z"/></svg></button>
+      <button data-tab="ideas" aria-label="Ideas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></button>
+      <button data-tab="goals" aria-label="Goals"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg></button>
+      <button data-tab="library" aria-label="Library"><svg viewBox="0 0 24 24"><circle cx="7.5" cy="7.5" r="3.5"/><path d="M16.5 3.5l4 7h-8z"/><rect x="4" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="3.5"/></svg></button>
+    </nav>
+
+    <div id="banner" class="banner" hidden></div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+
+  <div id="backdrop" class="backdrop" hidden></div>
+  <div id="sheet" class="sheet" hidden>
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <button id="sheet-back" class="round small" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2 id="sheet-title"></h2>
+      <span id="sheet-action"></span>
+    </div>
+    <div id="sheet-body" class="sheet-body"></div>
+  </div>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

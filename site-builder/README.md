@@ -48,5 +48,5 @@ Full API reference: [agent37.com/docs](https://www.agent37.com/docs). For coding
 
 - **Public means public.** Anyone with the URL can open the site, and a request to it wakes a sleeping instance, which bills compute. Don't publish anything sensitive, and delete the public port (or the instance) when a site should go away.
 - Hostnames are platform-minted: a random 20-character slug, or `{prefix}-{instanceId}.agent37.app` if you pass a `prefix`. To serve the same URLs under your own domain, register a [custom domain](https://www.agent37.com/docs/agents-api/domains); arbitrary hostnames like `app.yourdomain.com` are not a thing.
-- One public URL per port, at most 20 per instance, and platform ports (`3737`, `8080`, `7681`, ...) are rejected; this example uses `8788`.
+- One public URL per port, at most 50 per instance, and platform ports (`3737`, `8080`, `7681`, ...) are rejected; this example uses `8788`.
 - The path `/health` never reaches the site; the platform edge answers it.

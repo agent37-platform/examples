@@ -1,0 +1,17 @@
+{
+  "name": "instinct",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Build your own Instinct: a texting assistant per user on Agent37 and Inkbox",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
