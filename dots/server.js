@@ -112,7 +112,7 @@ function withUser(req, res, next) {
   let uid = readUid(req);
   if (!uid || !store.users[uid]) {
     uid = uid || crypto.randomBytes(12).toString('hex');
-    store.users[uid] = { id: uid, created: Date.now(), agent: null, threads: [], notifications: [], activity: [] };
+    store.users[uid] = { id: uid, created: Date.now(), agent: null, notifications: [], activity: [] };
     save();
   }
   const secure = req.secure || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
@@ -561,12 +561,19 @@ app.delete('/api/apps/connections/:accountId', requireAgent, (req, res) => {
   forwardJson(res, hosting(req.instanceId, `/integrations/connections/${req.params.accountId}`), { method: 'DELETE' });
 });
 
-// ---- chat: the user's own instance, sessions kept in the app's own thread index ----
-//
-// GET /v1/sessions caps at 100 and every cron firing opens a session, so a busy schedule
-// pushes chats out of that list within days. The app records the sessions it starts.
+// ---- chat: one ongoing conversation per agent ----
 
-app.get('/api/threads', requireAgent, (req, res) => res.json({ data: [...req.user.threads].reverse() }));
+function chatSession(user) {
+  // Older versions offered multiple chats. Continue the original conversation, keeping
+  // the old index and every session intact. Scheduled runs have their own sessions.
+  if (!user.agent.chatSessionId && user.threads?.length) {
+    user.agent.chatSessionId = user.threads[0].sessionId;
+    save();
+  }
+  return user.agent.chatSessionId || null;
+}
+
+app.get('/api/chat', requireAgent, (req, res) => res.json({ session_id: chatSession(req.user) }));
 
 app.get('/api/sessions/:sid', requireAgent, (req, res) => {
   if (!HEX32.test(req.params.sid)) return res.status(400).json({ error: { code: 'invalid_request', message: 'Bad session id.' } });
@@ -595,29 +602,40 @@ function replyContext(user, ids) {
   return ['Earlier you messaged your person first:', ...picked.map((n) => `- ${n.text}`), 'The message below is their reply.'].join('\n');
 }
 
-app.post('/api/responses', requireAgent, (req, res) => {
+const chatting = new Set();
+
+app.post('/api/responses', requireAgent, async (req, res) => {
   const input = typeof req.body?.input === 'string' ? req.body.input.trim() : '';
-  const sessionId = HEX32.test(req.body?.session_id || '') ? req.body.session_id : null;
-  const context = [OUTPUTS_BRIEF, req.body?.intro === true ? introBrief(req.user) : replyContext(req.user, req.body?.replying_to), req.body?.took_over === true ? TOOK_OVER : '']
+  // The server owns the conversation id, including for old tabs that still send one.
+  const sessionId = chatSession(req.user);
+  const intro = req.body?.intro === true && !sessionId;
+  if (chatting.has(req.user.id)) return res.status(409).json({ error: { code: 'session_busy', message: 'It is still working on your last message.' } });
+  if (!input && !intro) return res.status(400).json({ error: { code: 'invalid_request', message: 'Say something first.' } });
+  const context = [OUTPUTS_BRIEF, intro ? introBrief(req.user) : replyContext(req.user, req.body?.replying_to), req.body?.took_over === true ? TOOK_OVER : '']
     .filter(Boolean)
     .join('\n\n');
-  if (!input && req.body?.intro !== true) return res.status(400).json({ error: { code: 'invalid_request', message: 'Say something first.' } });
   // App context rides as a marked preamble; the gateway has no system-prompt field.
   const payload = { input: context ? `${APP_CONTEXT}\n${context}\n${APP_CONTEXT_END}\n\n${input}` : input, stream: true, ...(sessionId ? { session_id: sessionId } : {}) };
   let seen = '';
-  const recordThread = sessionId
+  const recordSession = sessionId
     ? null
     : (chunk) => {
         if (seen === null) return;
         seen += Buffer.from(chunk).toString('utf8');
-        const match = seen.match(/"session_id":"([a-f0-9]{32})"/);
+        const match = seen.match(/"session_id"\s*:\s*"([a-f0-9]{32})"/);
         if (!match) return;
         seen = null;
-        req.user.threads.push({ sessionId: match[1], title: req.body?.intro === true ? 'Getting to know you' : clip(input, 80), at: Date.now() });
-        req.user.threads = req.user.threads.slice(-200);
+        req.user.agent.chatSessionId = match[1];
         save();
       };
-  forwardSse(req, res, instanceUrl(req.instanceId, '/v1/responses'), { method: 'POST', body: JSON.stringify(payload) }, recordThread).then(() => tidyCrons(req.user));
+  // Two tabs finishing onboarding together must not create two first conversations.
+  chatting.add(req.user.id);
+  try {
+    await forwardSse(req, res, instanceUrl(req.instanceId, '/v1/responses'), { method: 'POST', body: JSON.stringify(payload) }, recordSession);
+  } finally {
+    chatting.delete(req.user.id);
+    tidyCrons(req.user);
+  }
 });
 
 app.get('/api/responses/:rid/stream', requireAgent, (req, res) => {

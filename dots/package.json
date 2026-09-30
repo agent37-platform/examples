@@ -5,7 +5,8 @@
   "version": "1.0.0",
   "description": "Build your own Dots: a personal agent on Agent37 that owns ongoing responsibilities, keeps its own schedule, and messages you first",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=18.17"
