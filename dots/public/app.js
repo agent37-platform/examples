@@ -10,7 +10,7 @@ const APP_CONTEXT_END = 'End of app context.';
 const MEMORY_CAPS = { user: 1375, memory: 2200 };
 
 let me = null; // { agent, status, unread }
-let sessionId = null;
+let loadingChat = false;
 let view = 'chat'; // 'chat' or 'inbox'
 let inFlight = null; // the live turn: { responseId, title, status, icon, tools }
 let replyTo = []; // messages the agent sent first that are on screen, unanswered
@@ -330,11 +330,7 @@ function showChat() {
   // after a turn, or when the user explicitly opens Outputs, never on a polling timer.
   if (me.status === 'running') loadOutputs().catch(() => {});
   if (me.agent.computer) initComputer();
-  pollNotifications().then(async () => {
-    const threads = await loadThreads();
-    if (!threads.length) return startIntro();
-    openSession(threads[0].sessionId);
-  });
+  pollNotifications().then(() => openChat());
   setInterval(pollNotifications, 15000);
   // The status line says whether it is awake; a Hosting API read never wakes it.
   setInterval(async () => {
@@ -436,45 +432,40 @@ function visibleUserText(content) {
   return end === -1 ? '' : content.slice(end + APP_CONTEXT_END.length).trim();
 }
 
-async function openSession(id, { checkin = false } = {}) {
+async function openChat() {
+  if (inFlight || loadingChat) return false;
+  loadingChat = true;
+  inputEl.disabled = sendBtn.disabled = true;
   view = 'chat';
-  sessionId = id;
   replyTo = [];
   messagesEl.innerHTML = '';
+  renderNavigation();
+  let introduce = false;
   try {
-    const session = await request(`/api/sessions/${id}`);
-    let first = true;
-    for (const message of session.history) {
-      if (message.role === 'system') continue;
-      if (message.role === 'user') {
-        // A check-in opens with its cron prompt, which the user did not type here.
-        if (checkin && first) addNote(`Scheduled check-in: ${visibleUserText(message.content).slice(0, 160)}`);
-        else {
+    const { session_id } = await request('/api/chat');
+    if (!session_id) introduce = true;
+    else {
+      const session = await request(`/api/sessions/${session_id}`);
+      for (const message of session.history) {
+        if (message.role === 'user') {
           const text = visibleUserText(message.content);
           if (text) addBubble('user', text);
-        }
-        first = false;
-      } else if (message.content) addBubble('agent', message.content);
+        } else if (message.role === 'assistant' && message.content) addBubble('agent', message.content);
+      }
+      if (!session.history.length && !session.active_response_id) emptyState();
+      // Reloading during a reply rejoins the same turn.
+      if (session.active_response_id) reattach(session.active_response_id, 'Working');
     }
-    if (!session.history.length && !session.active_response_id) emptyState();
-    // A turn still running (a reload mid-reply, or a check-in in progress) is not in the
-    // history yet; reattach to its stream.
-    if (session.active_response_id && !inFlight) reattach(session.active_response_id, checkin ? 'Scheduled check-in' : 'Working');
   } catch (err) {
     addNote(err.message, 'error');
+    return false;
+  } finally {
+    loadingChat = false;
+    inputEl.disabled = sendBtn.disabled = false;
   }
   showUnreadInline();
-  renderThreads();
-}
-
-function newChat() {
-  view = 'chat';
-  sessionId = null;
-  replyTo = [];
-  emptyState();
-  showUnreadInline();
-  renderThreads();
-  inputEl.focus();
+  if (introduce) startIntro();
+  return true;
 }
 
 // ---- streaming a turn (the parser and reattach loop come from hermes-chat) ----
@@ -515,7 +506,6 @@ async function consumeStream(response, bubble) {
   for await (const { event, data } of sseFrames(response)) {
     switch (event) {
       case 'response.created':
-        sessionId = data.session_id;
         inFlight.responseId = data.id;
         me.status = 'running';
         [...messagesEl.querySelectorAll('.receipt')].pop()?.replaceChildren('Read');
@@ -604,10 +594,14 @@ async function finishTurn(terminal) {
 }
 
 async function sendTurn(text, { intro = false } = {}) {
-  if (inFlight) return;
+  if (inFlight || loadingChat) return;
   if (view === 'inbox') {
-    view = 'chat';
-    sessionId = null;
+    const replyingTo = replyTo;
+    if (!(await openChat()) || inFlight) {
+      inputEl.value = text;
+      return;
+    }
+    replyTo = [...new Set([...replyTo, ...replyingTo])];
   }
   messagesEl.querySelector('.empty-chat')?.remove();
   if (text) {
@@ -622,7 +616,7 @@ async function sendTurn(text, { intro = false } = {}) {
   if (computer.mine) setControl(false);
   const tookOver = computer.tookOver;
   computer.tookOver = false;
-  const body = { input: text, stream: true, ...(sessionId ? { session_id: sessionId } : {}), ...(intro ? { intro: true } : {}), ...(replyTo.length ? { replying_to: replyTo } : {}), ...(tookOver ? { took_over: true } : {}) };
+  const body = { input: text, stream: true, ...(intro ? { intro: true } : {}), ...(replyTo.length ? { replying_to: replyTo } : {}), ...(tookOver ? { took_over: true } : {}) };
   if (replyTo.length) {
     post('/api/notifications/read').catch(() => {});
     allNotifications.forEach((n) => (n.read = true));
@@ -633,7 +627,6 @@ async function sendTurn(text, { intro = false } = {}) {
   setBusy(true);
   renderStatus();
   const bubble = newAgentBubble();
-  const wasNew = !sessionId;
 
   let response;
   try {
@@ -652,7 +645,6 @@ async function sendTurn(text, { intro = false } = {}) {
   }
   const terminal = await runStream(async () => response, bubble);
   await finishTurn(terminal);
-  if (wasNew) loadThreads();
 }
 
 async function reattach(responseId, title) {
@@ -666,7 +658,6 @@ async function reattach(responseId, title) {
 
 // The hidden first turn: the server adds the brief, and history never shows it.
 function startIntro() {
-  sessionId = null;
   messagesEl.innerHTML = '';
   sendTurn('', { intro: true });
 }
@@ -691,7 +682,7 @@ function setBusy(busy) {
 composer.addEventListener('submit', (event) => {
   event.preventDefault();
   const text = inputEl.value.trim();
-  if (!text || inFlight) return;
+  if (!text || inFlight || loadingChat) return;
   inputEl.value = '';
   inputEl.style.height = '';
   sendTurn(text);
@@ -709,36 +700,15 @@ inputEl.addEventListener('input', () => {
   inputEl.style.height = `${Math.min(inputEl.scrollHeight, 160)}px`;
 });
 
-// ---- threads drawer ----
+// ---- navigation drawer ----
 
-let threads = [];
-
-async function loadThreads() {
-  try {
-    threads = (await request('/api/threads')).data;
-  } catch {
-    threads = [];
-  }
-  renderThreads();
-  return threads;
-}
-
-function renderThreads() {
-  $('threads').innerHTML = threads
-    .map((t) => `<button class="drawer-row ${t.sessionId === sessionId && view === 'chat' ? 'on' : ''}" data-session="${t.sessionId}"><span>${esc(t.title || 'Chat')}</span><span class="when">${rel(t.at)}</span></button>`)
-    .join('');
+function renderNavigation() {
+  $('sidebar-agent').classList.toggle('on', view === 'chat');
   $('open-inbox').classList.toggle('on', view === 'inbox');
 }
 
-$('threads').addEventListener('click', (event) => {
-  const row = event.target.closest('[data-session]');
-  if (!row) return;
-  closeDrawer();
-  if (!inFlight) openSession(row.dataset.session);
-});
-
 function openDrawer() {
-  renderThreads();
+  renderNavigation();
   $('drawer').hidden = false;
 }
 function closeDrawer() {
@@ -749,15 +719,11 @@ $('drawer-close').onclick = closeDrawer;
 desktopLayout.addEventListener('change', () => {
   if (me?.agent && !$('chat-screen').hidden) closeDrawer();
 });
-$('sidebar-agent').onclick = () => { closeDrawer(); openProfile(); };
+$('sidebar-agent').onclick = () => { closeDrawer(); openChat(); };
 $('drawer').addEventListener('click', (event) => event.target.id === 'drawer' && closeDrawer());
-$('new-chat').onclick = () => {
-  closeDrawer();
-  if (!inFlight) newChat();
-};
 $('open-inbox').onclick = () => {
   closeDrawer();
-  if (!inFlight) openInbox();
+  if (!inFlight && !loadingChat) openInbox();
 };
 document.querySelectorAll('[data-open]').forEach((button) => {
   button.onclick = () => {
@@ -807,7 +773,6 @@ function showUnreadInline() {
 
 function openInbox() {
   view = 'inbox';
-  sessionId = null;
   replyTo = [];
   messagesEl.innerHTML = '';
   if (!allNotifications.length) addNote(`Nothing yet. When ${agentName()} finds something on a check-in, it messages you here.`);
@@ -816,7 +781,7 @@ function openInbox() {
   post('/api/notifications/read').catch(() => {});
   allNotifications.forEach((n) => (n.read = true));
   updateUnread();
-  renderThreads();
+  renderNavigation();
 }
 
 function showToast(n) {
@@ -1284,11 +1249,22 @@ async function renderCompletedTab(el) {
         })
       )
       .join('') || `<div class="act-empty">No check-ins yet.</div>`;
-  el.onclick = (event) => {
+  el.onclick = async (event) => {
     const target = event.target.closest('[data-open-session]');
-    if (!target || inFlight) return;
-    closeSheet();
-    openSession(target.dataset.openSession, { checkin: true });
+    if (!target) return;
+    // Check-ins run in background sessions. Inspect them without switching the chat.
+    const body = openSheet('<h2>Scheduled check-in</h2><div class="checkin-history"><p class="fine">Loading...</p></div>', { wide: true });
+    const history = body.querySelector('.checkin-history');
+    try {
+      const session = await request(`/api/sessions/${target.dataset.openSession}`);
+      history.innerHTML = session.history
+        .filter((message) => message.role === 'assistant' && message.content)
+        .map((message) => `<div class="bubble agent">${md(message.content)}</div>`)
+        .join('') || '<p class="fine">No reply yet.</p>';
+      if (session.active_response_id) history.insertAdjacentHTML('beforeend', '<p class="fine">This check-in is still running.</p>');
+    } catch (err) {
+      history.textContent = err.message;
+    }
   };
 }
 

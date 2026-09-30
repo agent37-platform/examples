@@ -74,7 +74,7 @@
     <p class="affiliation">Build your own Dots, an Agent37 example. Not affiliated with OpenAI.</p>
   </main>
 
-  <!-- Chat, with a persistent conversation sidebar and the agent's own activity panel. -->
+  <!-- One ongoing chat, with navigation and the agent's own activity panel. -->
   <div id="chat-screen" class="stage" hidden>
     <section class="chat-card">
       <header class="chat-head">
@@ -151,11 +151,8 @@
   <nav id="drawer" class="drawer" hidden>
     <div class="drawer-panel">
       <div class="sidebar-brand"><span>Dots <small>by Agent37</small></span><button class="icon-btn" id="drawer-close" aria-label="Close sidebar">&times;</button></div>
-      <button id="new-chat" class="drawer-row new-chat"><span>＋</span> New chat</button>
       <button id="sidebar-agent" class="drawer-row sidebar-agent"><span id="sidebar-mascot"></span><strong id="sidebar-name"></strong></button>
       <button id="open-inbox" class="drawer-row"><span id="inbox-label">Messages from your agent</span><span class="badge inline" id="inbox-badge" hidden></span></button>
-      <div class="drawer-sub">Recent chats</div>
-      <div id="threads"></div>
       <div class="drawer-foot">
         <button class="drawer-row" data-open="computer" id="drawer-computer" hidden>Its computer</button>
         <button class="drawer-row" data-open="apps">Apps</button>

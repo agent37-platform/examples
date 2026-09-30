@@ -9,7 +9,7 @@ Built on the [Agent37 Agents API](https://www.agent37.com/docs): one `agent37-he
 ## What's in it
 
 - **Onboarding.** Name it, pick a simple dot or one of five original blob mascots and an accent color, connect apps, then meet its cloud computer. The first chat introduces the agent from a hidden brief that never shows in the conversation.
-- **Chat.** A conversation sidebar, a wide chat, and an agent panel with its live status, computer, recent activity and outputs. The sidebar becomes a drawer on smaller screens. Tool events feed the status line ("Keeping its schedule...", "Searching the web: ..."); read receipts and the stop button stay in the conversation.
+- **Chat.** One ongoing conversation with your agent, a navigation sidebar, and an agent panel with its live status, computer, recent activity and outputs. Reloading or replying to a check-in continues the same chat. The sidebar becomes a drawer on smaller screens. Tool events feed the status line ("Keeping its schedule...", "Searching the web: ..."); read receipts and the stop button stay in the conversation.
 - **Customization.** A two-column dialog with colors and characters on one side, and a name, live preview and Save button on the other. Closing it without saving restores the current color.
 - **Outputs.** The agent saves finished files directly in `~/outputs`. Open them from the agent panel, sidebar, or composer to preview text and images or download the file. HTML and SVG preview as text; downloads are attachments. Only regular, non-hidden files in that folder are listed, with no arbitrary filesystem paths or symlinks exposed. The panel refreshes after a turn; Refresh fetches files made by a scheduled task. These reads wake a sleeping computer, so the app does not poll them.
 - **Activity.** In progress (the running turn with a stop button, any check-in running right now, and its own list of responsibilities) and Past activity.
@@ -56,9 +56,9 @@ One `sk_live_` key, held by this server only. The browser never sees it, and nev
 | Connect apps | `GET /v1/instances/{id}/integrations/toolkits`, `POST .../integrations/connect` with a `callbackUrl`, poll `GET .../integrations/connections` for `ACTIVE`, `DELETE .../connections/{id}` |
 | Chat | `POST https://{id}.agent37.app/v1/responses` with `stream: true`; `GET /v1/responses/{id}/stream` to reattach; `POST /v1/responses/{id}/cancel` to stop |
 | Status line and Activity | the stream's `response.tool_call.*` events |
-| Past chats | the app's own thread index, plus `GET /v1/sessions/{id}` to open one |
+| Conversation history | one session id stored on the visitor's agent, plus `GET /v1/sessions/{id}` to restore its history |
 | Scheduled | `GET/POST /v1/instances/{id}/crons`, `PATCH .../crons/{cronId}` (`enabled`), `DELETE`, `POST .../run`; a one-time reminder that has fired is `DELETE`d |
-| Completed | `GET /v1/instances/{id}/crons/{cronId}/runs`, plus the runs kept from deleted reminders; each run's `session_id` opens the chat it ran in |
+| Completed | `GET /v1/instances/{id}/crons/{cronId}/runs`, plus the runs kept from deleted reminders; each run's `session_id` opens read-only details |
 | In progress | `~/.dots/responsibilities.md` via the Files API, plus `active_response_id` on recent check-in sessions |
 | Pause / Resume | `PATCH` every enabled cron to `enabled: false` (and any the agent adds while paused), then back |
 | Memory | `GET /v1/files?path=~/.hermes/memories`, then `PUT /v1/files/content` with `X-Expected-Mtime` |
@@ -77,7 +77,7 @@ One `sk_live_` key, held by this server only. The browser never sees it, and nev
 
 **App context is marked.** The first turn's "introduce yourself" brief, a task's instructions, and the messages you are replying to all ride as a preamble that starts with `App context (from the Dots app ...` and ends with `End of app context.`. The chat view hides it when rendering history, so you only ever see what you typed.
 
-**The app keeps its own thread index.** `GET /v1/sessions` returns only the 100 most recent sessions, and every cron firing opens one, so a busy schedule would push your chats out of it. The server records each session it starts from the first stream event, and cron runs name their own sessions.
+**One agent, one conversation.** The server stores the first chat's session id on the visitor's agent and reuses it for every message, including replies from Messages from your agent. The browser cannot choose a different conversation. On older installs, the app resumes the original chat and keeps the previous thread index and sessions intact. Scheduled check-ins still run in their own background sessions; their read-only details never replace the chat. Recording the conversation id also keeps it reachable after scheduled runs push it out of the API's 100 most recent sessions.
 
 **Memory writes never clobber the agent.** The editor saves with the `modified` value it read, sent back as `X-Expected-Mtime`. If the agent wrote the file in between, the write fails with `412` and the editor shows its version instead. Pass the value back exactly as listed: it has a fractional part, and a rounded one never matches.
 
@@ -103,6 +103,10 @@ New agents are then created from that template: the stock Hermes image plus a li
 - **Take over** cancels the turn in flight and turns `viewOnly` off. **Return control** turns it back on. Sending a message also hands control back, and tells the agent you were there so it looks at the browser before carrying on. `SOUL.md` tells the agent its screen is live and to ask you to take over for a sign-in instead of asking for a password in chat; a login you finish there stays signed in.
 - **Sleep.** The open view streams even when nothing on the screen changes, and that counts as activity, so it keeps the instance awake. The pane lets go of the socket when you close it or switch tabs, and the instance then sleeps after its idle timeout as usual. Opening the pane again wakes it; from asleep, the screen was back in 4 to 18 seconds in testing.
 - **Crons.** On a workspace template, a cron that names no agent gets its run's `session_id` only once the turn finishes, so the app cannot open it until then. `"agent": "hermes"` links it from the start. Tasks the app adds set it. The `agent37 cron` CLI has no such flag, so the server `PATCH`es the crons the agent schedules for itself to `hermes` after every turn and whenever it lists the schedule.
+
+## Test chat continuity
+
+With the app running, run `npm test` (or set `DOTS_TEST_BASE_URL` for another address). The integration test provisions a real agent under a fresh visitor, checks that concurrent requests and caller-supplied session ids cannot fork its conversation, and deletes the test agent afterward. It uses the configured workspace's compute and managed-service budget.
 
 ## For production
 
