@@ -1,6 +1,7 @@
 // Original blob mascots, drawn as inline SVG so they take any accent color. Each is a body
 // path in a 100x100 box plus where its eyes sit.
 const MASCOTS = {
+  dot: { label: 'Simple dot' },
   bean: {
     label: 'Bean',
     body: 'M34 16C58 6 88 18 88 50C88 78 70 92 48 92C24 92 10 76 12 54C13 40 20 22 34 16Z',
@@ -29,7 +30,7 @@ const MASCOTS = {
   },
 };
 
-const ACCENTS = ['#00b1ff', '#fa70ab', '#f5cf69', '#b6d80b', '#fb694a', '#a77bf3'];
+const ACCENTS = ['#00b1ff', '#fa70ab', '#f5cf69', '#b6d80b', '#fb694a', '#a77bf3', '#b9bdcc'];
 
 function hexToRgb(hex) {
   const n = parseInt(hex.slice(1), 16);
@@ -51,6 +52,7 @@ function inkOn(hex) {
 let gradientSeq = 0;
 
 function mascotSvg(shape, color, { size = 80, className = '' } = {}) {
+  if (shape === 'dot') return `<svg class="mascot ${className}" width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true"><circle class="body" cx="50" cy="50" r="30" fill="none" stroke="${color}" stroke-width="19" /></svg>`;
   const m = MASCOTS[shape] || MASCOTS.bean;
   const id = `mg${gradientSeq++}`;
   const [left, eyeY, right] = m.eyes;

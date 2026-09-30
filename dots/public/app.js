@@ -15,6 +15,7 @@ let view = 'chat'; // 'chat' or 'inbox'
 let inFlight = null; // the live turn: { responseId, title, status, icon, tools }
 let replyTo = []; // messages the agent sent first that are on screen, unanswered
 let knownNotifications = null;
+const desktopLayout = matchMedia('(min-width: 1000px)');
 
 async function request(path, init = {}) {
   const res = await fetch(path, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } });
@@ -131,9 +132,11 @@ async function boot() {
 }
 
 function showStep(id) {
+  document.body.classList.remove('chat-ready');
+  $('drawer').hidden = true;
   $('chat-screen').hidden = true;
   $('onboard').hidden = false;
-  for (const step of ['step-meet', 'step-creating', 'step-apps']) $(step).hidden = step !== id;
+  for (const step of ['step-meet', 'step-creating', 'step-apps', 'step-computer']) $(step).hidden = step !== id;
 }
 
 // ---- onboarding 1: name it, pick a look and a color ----
@@ -145,9 +148,9 @@ function renderPicker(shapesEl, colorsEl, previewEl, onChange) {
     applyTheme(draft.accent);
     previewEl.innerHTML = mascotSvg(draft.mascot, draft.accent, { size: 150 });
     shapesEl.innerHTML = Object.keys(MASCOTS)
-      .map((key) => `<button type="button" data-shape="${key}" class="${key === draft.mascot ? 'on' : ''}" title="${MASCOTS[key].label}">${mascotSvg(key, draft.accent, { size: 50 })}</button>`)
+      .map((key) => `<button type="button" data-shape="${key}" class="${key === draft.mascot ? 'on' : ''}" aria-pressed="${key === draft.mascot}" aria-label="${MASCOTS[key].label}">${mascotSvg(key, draft.accent, { size: 50 })}</button>`)
       .join('');
-    colorsEl.innerHTML = ACCENTS.map((c) => `<button type="button" data-color="${c}" class="${c === draft.accent ? 'on' : ''}" style="background:${c}" aria-label="${c}"></button>`).join('');
+    colorsEl.innerHTML = ACCENTS.map((c) => `<button type="button" data-color="${c}" class="${c === draft.accent ? 'on' : ''}" style="--swatch:${c}" aria-pressed="${c === draft.accent}" aria-label="${c}"></button>`).join('');
     onChange?.();
   };
   shapesEl.onclick = (event) => {
@@ -297,18 +300,35 @@ async function renderApps(container) {
 
 function showAppsStep() {
   showStep('step-apps');
+  $('apps-mascot').innerHTML = mascotSvg(me.agent.mascot, me.agent.accent, { size: 100 });
   $('apps-sub').textContent = `So ${agentName()} can read your email, calendar and files. You can skip this and add them later.`;
   renderApps($('onboard-apps'));
-  $('apps-skip').onclick = $('apps-continue').onclick = () => showChat();
+  $('apps-skip').onclick = $('apps-continue').onclick = showComputerStep;
+}
+
+function showComputerStep() {
+  showStep('step-computer');
+  $('computer-welcome-mascot').innerHTML = mascotSvg(me.agent.mascot, me.agent.accent, { size: 90 });
+  $('computer-welcome-name').textContent = `${agentName()}'s computer`;
+  $('computer-welcome-copy').textContent = me.agent.computer
+    ? `${agentName()} can browse, work on files, and follow up while you are away. Open its computer from the chat to watch or take over.`
+    : `${agentName()} can browse, work on files, and follow up while you are away. You can find what it creates in Outputs.`;
+  $('computer-continue').onclick = showChat;
 }
 
 // ---- chat screen ----
 
 function showChat() {
+  document.body.classList.add('chat-ready');
+  $('drawer').hidden = !desktopLayout.matches;
   $('onboard').hidden = true;
   $('chat-screen').hidden = false;
   applyTheme(me.agent.accent);
   renderHead();
+  refreshPanel();
+  // Opening a file listing wakes a sleeping instance. Refresh on arrival only if awake,
+  // after a turn, or when the user explicitly opens Outputs, never on a polling timer.
+  if (me.status === 'running') loadOutputs().catch(() => {});
   if (me.agent.computer) initComputer();
   pollNotifications().then(async () => {
     const threads = await loadThreads();
@@ -324,11 +344,16 @@ function showChat() {
 }
 
 function renderHead() {
-  $('head-mascot').innerHTML = mascotSvg(me.agent.mascot, me.agent.accent, { size: 84 });
+  $('head-mascot').innerHTML = mascotSvg(me.agent.mascot, me.agent.accent, { size: 64 });
   $('head-name').textContent = me.agent.name;
+  $('sidebar-name').textContent = me.agent.name;
+  $('sidebar-mascot').innerHTML = mascotSvg(me.agent.mascot, me.agent.accent, { size: 30 });
+  $('chat-title').textContent = agentName();
   inputEl.placeholder = `Message ${agentName()}`;
   $('inbox-label').textContent = `Messages from ${agentName()}`;
   $('computer-title').textContent = $('drawer-computer').textContent = `${agentName()}'s computer`;
+  $('panel-computer-name').textContent = `${agentName()}'s computer`;
+  $('panel-computer-section').hidden = !me.agent.computer;
   renderControl();
   renderStatus();
 }
@@ -340,6 +365,7 @@ function renderStatus() {
   if (inFlight) status.textContent = inFlight.status;
   else if (me.agent.paused) status.textContent = 'Paused · Tap to resume';
   else status.textContent = { sleeping: 'Resting · wakes when you write', waking: 'Waking up', stopped: 'Stopped' }[me.status] || 'Online';
+  $('chat-title').textContent = inFlight ? inFlight.status : agentName();
   $('activity-live').hidden = !inFlight;
 }
 
@@ -349,6 +375,7 @@ function setStatus(text, icon) {
   if (icon) inFlight.icon = icon;
   renderStatus();
   if (!$('activity-card').hidden) renderActivityNow();
+  renderPanelActivity();
 }
 
 function scrollToBottom() {
@@ -572,6 +599,8 @@ async function finishTurn(terminal) {
   const status = turn.cancelled ? 'Stopped' : !terminal?.ok ? 'Failed' : verbs.length ? `Done · ${verbs.slice(0, 2).join(', ')}` : 'Replied';
   await post('/api/activity', { title: turn.title, status, icon: turn.icon }).catch(() => {});
   if (!$('activity-card').hidden) renderActivity();
+  refreshPanel();
+  loadOutputs().catch(() => {});
 }
 
 async function sendTurn(text, { intro = false } = {}) {
@@ -713,9 +742,14 @@ function openDrawer() {
   $('drawer').hidden = false;
 }
 function closeDrawer() {
-  $('drawer').hidden = true;
+  $('drawer').hidden = !desktopLayout.matches;
 }
 $('menu-btn').onclick = openDrawer;
+$('drawer-close').onclick = closeDrawer;
+desktopLayout.addEventListener('change', () => {
+  if (me?.agent && !$('chat-screen').hidden) closeDrawer();
+});
+$('sidebar-agent').onclick = () => { closeDrawer(); openProfile(); };
 $('drawer').addEventListener('click', (event) => event.target.id === 'drawer' && closeDrawer());
 $('new-chat').onclick = () => {
   closeDrawer();
@@ -728,7 +762,7 @@ $('open-inbox').onclick = () => {
 document.querySelectorAll('[data-open]').forEach((button) => {
   button.onclick = () => {
     closeDrawer();
-    ({ apps: openAppsSheet, memory: openMemory, profile: () => openProfile(), computer: () => showComputer(true) })[button.dataset.open]();
+    ({ apps: openAppsSheet, outputs: openOutputs, memory: openMemory, profile: () => openProfile(), computer: () => showComputer(true) })[button.dataset.open]();
   };
 });
 
@@ -812,7 +846,7 @@ const computer = { RFB: null, rfb: null, connecting: false, mine: false, tookOve
 
 function initComputer() {
   $('drawer-computer').hidden = false;
-  showComputer(matchMedia('(min-width: 900px)').matches);
+  showComputer(false);
   document.addEventListener('visibilitychange', () => (document.hidden ? disconnectComputer() : connectComputer()));
 }
 
@@ -893,6 +927,113 @@ function renderControl() {
 $('control-btn').onclick = () => setControl(!computer.mine);
 $('computer-close').onclick = () => showComputer(false);
 
+// ---- the agent panel and output files ----
+
+let panelActivity = [];
+let outputFiles = [];
+
+function renderPanelActivity() {
+  const recent = inFlight
+    ? [{ title: inFlight.title, status: inFlight.status }, ...panelActivity.slice(0, 1)]
+    : panelActivity.slice(0, 2);
+  $('panel-recent').innerHTML = recent.map(a => `<button class="panel-recent-row"><strong>${esc(a.title)}</strong><span>${esc(a.status)}${a.at ? ` · ${rel(a.at)}` : ''}</span></button>`).join('') || '<p class="panel-empty">No activity yet</p>';
+}
+
+async function refreshPanel() {
+  try {
+    panelActivity = (await request('/api/activity')).data;
+    renderPanelActivity();
+  } catch {}
+}
+
+$('customize-btn').onclick = openEdit;
+$('panel-schedule').onclick = () => openProfile('scheduled');
+$('panel-activity').onclick = $('panel-recent').onclick = () => {
+  $('activity-card').hidden = false;
+  renderActivity();
+};
+$('composer-files').onclick = openOutputs;
+
+function fileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  return bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const outputUrl = name => `/api/outputs/${encodeURIComponent(name)}`;
+const fileType = name => name.includes('.') ? name.split('.').pop().slice(0, 5) : 'file';
+
+function outputRow(file) {
+  return `<div class="output-row"><button class="output-open" data-output="${esc(file.name)}"><span class="file-icon">${esc(fileType(file.name))}</span><span class="output-info"><strong>${esc(file.name)}</strong><small>${fileSize(file.size)} · ${rel(file.modified)}</small></span></button><a class="output-download" href="${esc(outputUrl(file.name))}" download aria-label="Download ${esc(file.name)}">↓</a></div>`;
+}
+
+async function loadOutputs() {
+  outputFiles = (await request('/api/outputs')).data;
+  $('panel-outputs').innerHTML = outputFiles.slice(0, 3).map(outputRow).join('') || '<p class="panel-empty">No outputs yet</p>';
+  return outputFiles;
+}
+
+$('panel-outputs').onclick = (event) => {
+  const button = event.target.closest('[data-output]');
+  if (button) openOutput(button.dataset.output);
+};
+
+async function openOutputs() {
+  const body = openSheet(`<h2>Outputs</h2><div class="outputs-toolbar"><p>Files ${esc(agentName())} has made for you.</p><button class="mini-btn" id="refresh-outputs">Refresh</button></div><div id="output-list"><p class="fine">Loading files...</p></div>`, { wide: true });
+  const list = body.querySelector('#output-list');
+  const refresh = body.querySelector('#refresh-outputs');
+  const load = async () => {
+    refresh.disabled = true;
+    try {
+      const files = await loadOutputs();
+      list.innerHTML = files.map(outputRow).join('') || `<div class="output-empty"><span class="file-icon" style="margin:auto">file</span><strong>No outputs yet</strong>Ask ${esc(agentName())} to make a document, spreadsheet, or image.<br />It will appear here when it is ready.</div>`;
+    } catch (err) {
+      list.innerHTML = `<p class="error">Could not load files: ${esc(err.message)}</p>`;
+    } finally { refresh.disabled = false; }
+  };
+  refresh.onclick = load;
+  list.onclick = (event) => {
+    const button = event.target.closest('[data-output]');
+    if (button) openOutput(button.dataset.output);
+  };
+  await load();
+}
+
+async function openOutput(name) {
+  const file = outputFiles.find(f => f.name === name);
+  if (!file) return;
+  const body = openSheet(`<button class="mini-btn" id="back-outputs">← Outputs</button><h2 class="file-preview-title" style="margin-top:18px">${esc(name)}</h2><div class="outputs-toolbar"><p>${fileSize(file.size)}</p><a class="mini-btn output-download" href="${esc(outputUrl(name))}" download>Download</a></div><div id="output-preview"></div>`, { wide: true });
+  body.querySelector('#back-outputs').onclick = openOutputs;
+  const preview = body.querySelector('#output-preview');
+  const text = /\.(txt|md|csv|json|html?|svg|js|ts|py|css|ya?ml|xml|log)$/i.test(name);
+  const image = /\.(png|jpe?g|gif|webp)$/i.test(name);
+  if ((!text && !image) || file.size > (image ? 10 : 1) * 1024 * 1024) {
+    preview.innerHTML = '<p class="fine">Download this file to open it.</p>';
+    return;
+  }
+  preview.innerHTML = '<p class="fine">Loading preview...</p>';
+  try {
+    const response = await fetch(outputUrl(name));
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error?.message || 'Could not read this file.');
+    const content = image ? await response.blob() : await response.text();
+    if (!preview.isConnected || $('sheet').hidden) return;
+    preview.replaceChildren();
+    // Text (including HTML/SVG) never executes on our origin. Images use a blob URL.
+    if (image) {
+      previewUrl = URL.createObjectURL(content);
+      const img = document.createElement('img');
+      img.className = 'image-preview';
+      img.alt = name;
+      img.src = previewUrl;
+      preview.appendChild(img);
+    } else {
+      const pre = document.createElement('pre');
+      pre.className = 'file-preview';
+      pre.textContent = content;
+      preview.appendChild(pre);
+    }
+  } catch (err) { preview.textContent = err.message; }
+}
+
 // ---- activity card ----
 
 $('activity-btn').onclick = () => {
@@ -947,18 +1088,46 @@ $('activity-card').addEventListener('click', (event) => {
 
 // ---- sheets ----
 
-function openSheet(html, { wide = false } = {}) {
+let sheetTrigger = null;
+let previewUrl = null;
+
+function openSheet(html, { wide = false, customize = false } = {}) {
+  if ($('sheet').hidden) sheetTrigger = document.activeElement;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = null;
   $('sheet-body').innerHTML = html;
   document.querySelector('.sheet').classList.toggle('wide', wide);
+  document.querySelector('.sheet').classList.toggle('customize', customize);
   $('sheet').hidden = false;
+  const dialog = document.querySelector('.sheet');
+  dialog.setAttribute('aria-label', $('sheet-body').querySelector('h2')?.textContent || 'Agent details');
+  dialog.focus();
   return $('sheet-body');
 }
 function closeSheet() {
   $('sheet').hidden = true;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = null;
   if (me?.agent) applyTheme(me.agent.accent);
+  sheetTrigger?.focus();
 }
 $('sheet-close').onclick = closeSheet;
 $('sheet').addEventListener('click', (event) => event.target.id === 'sheet' && closeSheet());
+document.addEventListener('keydown', (event) => {
+  if (!$('sheet').hidden) {
+    if (event.key === 'Escape') closeSheet();
+    if (event.key === 'Tab') {
+      const controls = [...$('sheet').querySelectorAll('button:not(:disabled), a[href], input, textarea, select')].filter(el => el.getClientRects().length);
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === document.querySelector('.sheet'))) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+  } else if (event.key === 'Escape') {
+    closeDrawer();
+    $('activity-card').hidden = true;
+    if (me?.agent?.computer) showComputer(false);
+  }
+});
 
 $('profile-btn').onclick = () => openProfile();
 
@@ -1143,23 +1312,32 @@ async function resetAgent() {
 function openEdit() {
   Object.assign(draft, { name: me.agent.name, mascot: me.agent.mascot, accent: me.agent.accent });
   const body = openSheet(`
-    <h2>Edit</h2>
-    <div class="hero-mascot" id="edit-preview"></div>
-    <label class="field"><span>Name</span><input id="edit-name" maxlength="24" value="${esc(draft.name)}" /></label>
-    <div class="field"><span>Look</span><div id="edit-shapes" class="picker"></div></div>
-    <div class="field"><span>Color</span><div id="edit-colors" class="swatches"></div></div>
-    <div class="row-actions"><button class="cta" id="edit-save">Save</button></div>
-  `);
+    <div class="customize-card">
+      <div class="customize-options">
+        <h2>Customize your agent</h2>
+        <div class="field"><span>Colors</span><div id="edit-colors" class="swatches"></div></div>
+        <div class="field"><span>Characters</span><div id="edit-shapes" class="picker"></div></div>
+      </div>
+      <div class="customize-preview">
+        <label class="field"><span class="sr-only">Name</span><input id="edit-name" maxlength="24" value="${esc(draft.name)}" /></label>
+        <div class="hero-mascot" id="edit-preview"></div>
+        <button class="cta" id="edit-save">Save</button>
+      </div>
+    </div>
+  `, { customize: true });
   renderPicker(body.querySelector('#edit-shapes'), body.querySelector('#edit-colors'), body.querySelector('#edit-preview'));
-  body.querySelector('#edit-save').onclick = async () => {
+  const saveButton = body.querySelector('#edit-save');
+  saveButton.onclick = async () => {
+    saveButton.disabled = true;
     const name = body.querySelector('#edit-name').value.trim() || me.agent.name;
     try {
       const { agent } = await send('/api/agent', 'PATCH', { ...(name !== me.agent.name ? { name } : {}), mascot: draft.mascot, accent: draft.accent });
       me.agent = agent;
       applyTheme(agent.accent);
       renderHead();
-      openProfile();
+      if (saveButton.isConnected) closeSheet();
     } catch (err) {
+      saveButton.disabled = false;
       alert(err.message);
     }
   };

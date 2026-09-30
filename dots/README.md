@@ -8,8 +8,10 @@ Built on the [Agent37 Agents API](https://www.agent37.com/docs): one `agent37-he
 
 ## What's in it
 
-- **Onboarding.** Name it, pick one of five original blob mascots and an accent color (the accent tints user bubbles, the send button and the page backdrop), connect apps, then a first turn where it introduces itself from a hidden brief that never shows in the chat.
-- **Chat.** The mascot floats above the conversation with a name pill and a live status line fed by the stream's tool events ("Keeping its schedule...", "Searching the web: ..."). Read receipts, stop button, and a drawer of past chats.
+- **Onboarding.** Name it, pick a simple dot or one of five original blob mascots and an accent color, connect apps, then meet its cloud computer. The first chat introduces the agent from a hidden brief that never shows in the conversation.
+- **Chat.** A conversation sidebar, a wide chat, and an agent panel with its live status, computer, recent activity and outputs. The sidebar becomes a drawer on smaller screens. Tool events feed the status line ("Keeping its schedule...", "Searching the web: ..."); read receipts and the stop button stay in the conversation.
+- **Customization.** A two-column dialog with colors and characters on one side, and a name, live preview and Save button on the other. Closing it without saving restores the current color.
+- **Outputs.** The agent saves finished files directly in `~/outputs`. Open them from the agent panel, sidebar, or composer to preview text and images or download the file. HTML and SVG preview as text; downloads are attachments. Only regular, non-hidden files in that folder are listed, with no arbitrary filesystem paths or symlinks exposed. The panel refreshes after a turn; Refresh fetches files made by a scheduled task. These reads wake a sleeping computer, so the app does not poll them.
 - **Activity.** In progress (the running turn with a stop button, any check-in running right now, and its own list of responsibilities) and Past activity.
 - **Profile.** In progress / Scheduled / Completed. Scheduled lists every cron, marked "Set by you" or "Set by <name>" when the agent scheduled itself; Run now, pause or delete each one, or add a task. Completed lists every firing and opens the chat it ran in. The ... menu has Pause (turns its schedule off) and Reset (delete and start over). The pencil edits name, mascot and color.
 - **Messages you first.** A check-in that finds something runs `sh ~/.dots/notify "..."` inside the instance, which calls this server; the message appears in the open chat with a toast, an unread badge and the tab title. Replying carries the message to the agent as context, since it came from a different chat.
@@ -60,6 +62,7 @@ One `sk_live_` key, held by this server only. The browser never sees it, and nev
 | In progress | `~/.dots/responsibilities.md` via the Files API, plus `active_response_id` on recent check-in sessions |
 | Pause / Resume | `PATCH` every enabled cron to `enabled: false` (and any the agent adds while paused), then back |
 | Memory | `GET /v1/files?path=~/.hermes/memories`, then `PUT /v1/files/content` with `X-Expected-Mtime` |
+| Outputs | `GET /v1/files?path=~/outputs`, then `GET /v1/files/content?path=~/outputs/{name}&disposition=attachment` through the server |
 | Reset | `DELETE /v1/instances/{id}`, then onboarding again |
 | Messages you first | the agent calls `POST {PUBLIC_URL}/api/notify` here |
 | Its computer (optional) | `template` on create; `POST /v1/instances/{id}/signed-url` with `port: 6901` and `ttl_seconds: 60` on every connect, then a WebSocket to `wss://{id}-6901.agent37.app/websockify?a37_token=...`; crons get `agent: "hermes"` |
@@ -80,7 +83,7 @@ One `sk_live_` key, held by this server only. The browser never sees it, and nev
 
 ## Watch and take over its computer
 
-Dots shows its computer beside the chat: you watch it work, take over the mouse and keyboard when a site needs you (a sign-in, a code sent to your phone, a CAPTCHA), and hand it back. This app does the same once you give it a desktop template. It is off by default.
+Dots shows its computer beside the chat: you watch it work, take over the mouse and keyboard when a site needs you (a sign-in, a code sent to your phone, a CAPTCHA), and hand it back. This app does the same once you give it a desktop template. Click the computer in the agent panel or sidebar to open it; closing it returns to the agent panel. The desktop template is off by default.
 
 1. Build the desktop image once from the [hermes-vnc-desktop](../custom-images/hermes-vnc-desktop) recipe in this repo. Agent37 builds it in the cloud, no Docker needed:
 

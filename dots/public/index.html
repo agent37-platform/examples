@@ -11,32 +11,35 @@
   <link rel="stylesheet" href="/app.css" />
 </head>
 <body>
-  <div class="backdrop"></div>
-
   <!-- Onboarding: name it, pick a mascot and a color, create, connect apps. -->
   <main id="onboard" class="onboard" hidden>
-    <section id="step-meet" class="onboard-card" hidden>
-      <div class="hero-mascot" id="meet-preview"></div>
-      <h1>Make it yours</h1>
-      <p class="sub">Your agent gets its own computer in the cloud. It keeps working, and keeps its own schedule, while you are away.</p>
-      <label class="field">
-        <span>Name it</span>
-        <input id="meet-name" maxlength="24" value="Pip" autocomplete="off" />
-      </label>
-      <div class="field">
-        <span>Pick a look</span>
-        <div id="meet-shapes" class="picker"></div>
+    <a class="onboard-brand" href="/">Dots <span>by Agent37</span></a>
+    <section id="step-meet" class="onboard-card customize-card" hidden>
+      <div class="customize-options">
+        <h1>Make it yours</h1>
+        <p class="sub">A little personality. A computer of its own. An agent that keeps things moving for you.</p>
+        <div class="field">
+          <span>Colors</span>
+          <div id="meet-colors" class="swatches"></div>
+        </div>
+        <div class="field">
+          <span>Characters</span>
+          <div id="meet-shapes" class="picker"></div>
+        </div>
+        <label class="field">
+          <span>What should it call you?</span>
+          <input id="meet-username" maxlength="40" placeholder="Your first name" autocomplete="given-name" />
+        </label>
       </div>
-      <div class="field">
-        <span>And a color</span>
-        <div id="meet-colors" class="swatches"></div>
+      <div class="customize-preview">
+        <label class="field">
+          <span class="sr-only">Name it</span>
+          <input id="meet-name" maxlength="24" value="Pip" autocomplete="off" />
+        </label>
+        <div class="hero-mascot" id="meet-preview"></div>
+        <button id="meet-create" class="cta">Create</button>
+        <p class="fine error" id="meet-error" role="alert"></p>
       </div>
-      <label class="field">
-        <span>What should it call you?</span>
-        <input id="meet-username" maxlength="40" placeholder="Your first name" autocomplete="given-name" />
-      </label>
-      <button id="meet-create" class="cta">Create</button>
-      <p class="fine" id="meet-error"></p>
     </section>
 
     <section id="step-creating" class="onboard-card" hidden>
@@ -52,7 +55,8 @@
     </section>
 
     <section id="step-apps" class="onboard-card wide" hidden>
-      <h1>Connect your apps</h1>
+      <div class="hero-mascot" id="apps-mascot"></div>
+      <h1>Make your agent more helpful</h1>
       <p class="sub" id="apps-sub">So it can read your email, calendar and files. You can skip this and add them later.</p>
       <div class="apps-panel" id="onboard-apps"></div>
       <div class="row-actions">
@@ -60,10 +64,17 @@
         <button id="apps-continue" class="cta">Continue</button>
       </div>
     </section>
+    <section id="step-computer" class="onboard-card wide" hidden>
+      <div class="computer-illustration" aria-hidden="true"><div class="illustration-browser"><span></span><span></span><span></span><div id="computer-welcome-mascot"></div></div></div>
+      <h1>A computer of its own</h1>
+      <p class="sub" id="computer-welcome-copy"></p>
+      <div class="computer-choice"><span class="choice-icon">▣</span><div><strong id="computer-welcome-name"></strong><span>A cloud computer that keeps its files and remembers its work.</span></div><span aria-label="Selected">✓</span></div>
+      <button id="computer-continue" class="cta">Start chatting</button>
+    </section>
     <p class="affiliation">Build your own Dots, an Agent37 example. Not affiliated with OpenAI.</p>
   </main>
 
-  <!-- Chat: the agent floats over the conversation, with its name and what it is doing. -->
+  <!-- Chat, with a persistent conversation sidebar and the agent's own activity panel. -->
   <div id="chat-screen" class="stage" hidden>
     <section class="chat-card">
       <header class="chat-head">
@@ -71,11 +82,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span class="badge" id="menu-badge" hidden></span>
         </button>
-        <button class="head-center" id="profile-btn" aria-label="Profile">
-          <span id="head-mascot" class="head-mascot"></span>
-          <span class="name-pill" id="head-name"></span>
-          <span class="status-line" id="head-status"></span>
-        </button>
+        <span id="chat-title" class="chat-title"></span>
         <button class="round" id="activity-btn" aria-label="Activity">
           <svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span class="dot-live" id="activity-live" hidden></span>
@@ -85,6 +92,7 @@
       <div id="messages" class="messages"></div>
 
       <form id="composer" class="composer">
+        <button id="composer-files" class="composer-plus" type="button" aria-label="Open outputs">+</button>
         <textarea id="input" rows="1" placeholder="Send a message" required></textarea>
         <button id="send" class="send" type="submit" aria-label="Send">
           <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -99,6 +107,29 @@
         <div id="activity-past"></div>
       </div>
     </section>
+
+    <aside class="agent-panel" aria-label="Your agent">
+      <div class="agent-panel-head">
+        <button class="head-center" id="profile-btn" aria-label="Profile and schedule">
+          <span id="head-mascot" class="head-mascot"></span>
+          <span class="agent-heading"><span id="head-name"></span><span class="status-line" id="head-status" aria-live="polite"></span></span>
+        </button>
+        <button class="icon-btn" id="customize-btn" aria-label="Customize your agent">&#9998;</button>
+      </div>
+      <div class="panel-actions"><button data-open="apps">Apps</button><button id="panel-schedule">Schedule</button></div>
+      <section id="panel-computer-section" hidden>
+        <h2>Computer</h2>
+        <button id="panel-computer" class="computer-link" data-open="computer"><span class="computer-link-icon">▣</span><span><strong id="panel-computer-name"></strong><span>Watch or take over</span></span><span class="desktop-thumbnail" aria-hidden="true"></span></button>
+      </section>
+      <section>
+        <div class="panel-section-head"><h2>Recent activity</h2><button id="panel-activity" aria-label="View all activity">View all</button></div>
+        <div id="panel-recent"><p class="panel-empty">No activity yet</p></div>
+      </section>
+      <section>
+        <div class="panel-section-head"><h2>Outputs</h2><button data-open="outputs">View all</button></div>
+        <div id="panel-outputs"><p class="panel-empty">Open Outputs to see your files</p></div>
+      </section>
+    </aside>
 
     <!-- Its computer, live: only for agents created from DESKTOP_TEMPLATE. -->
     <aside id="computer-pane" class="computer-pane" hidden>
@@ -119,21 +150,25 @@
 
   <nav id="drawer" class="drawer" hidden>
     <div class="drawer-panel">
-      <button id="new-chat" class="cta small">New chat</button>
+      <div class="sidebar-brand"><span>Dots <small>by Agent37</small></span><button class="icon-btn" id="drawer-close" aria-label="Close sidebar">&times;</button></div>
+      <button id="new-chat" class="drawer-row new-chat"><span>＋</span> New chat</button>
+      <button id="sidebar-agent" class="drawer-row sidebar-agent"><span id="sidebar-mascot"></span><strong id="sidebar-name"></strong></button>
       <button id="open-inbox" class="drawer-row"><span id="inbox-label">Messages from your agent</span><span class="badge inline" id="inbox-badge" hidden></span></button>
-      <div class="drawer-sub">Chats</div>
+      <div class="drawer-sub">Recent chats</div>
       <div id="threads"></div>
       <div class="drawer-foot">
         <button class="drawer-row" data-open="computer" id="drawer-computer" hidden>Its computer</button>
         <button class="drawer-row" data-open="apps">Apps</button>
+        <button class="drawer-row" data-open="outputs">Outputs</button>
         <button class="drawer-row" data-open="memory">Memory</button>
         <button class="drawer-row" data-open="profile">Profile and schedule</button>
+        <p class="sidebar-note">An Agent37 example.<br />Not affiliated with OpenAI.</p>
       </div>
     </div>
   </nav>
 
   <div id="sheet" class="sheet-backdrop" hidden>
-    <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Agent details" tabindex="-1">
       <button class="x sheet-x" id="sheet-close" aria-label="Close">&times;</button>
       <div id="sheet-body"></div>
     </div>
