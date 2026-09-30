@@ -1,72 +1,57 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
 
-# Wire Hermes to the platform's managed LLM endpoint (see
-# https://www.agent37.com/docs/agents-api/managed-services). hermes-base is a clean
-# image, so nothing does this for us. Runs on EVERY boot because the token is
-# reissued on create/start/restart/update; a config written once would 401 after
-# the first restart. Merges into ~/.hermes/config.yaml, preserving your other keys.
-configure_managed_llm() {
-  [ -n "${AGENT37_LLM_PROXY_URL:-}" ] && [ -n "${AGENT37_MANAGED_TOKEN:-}" ] || return 0
-  "${HERMES_PYTHON:-python3}" - <<'PY' || echo "managed LLM config failed; chat will need manual credentials" >&2
-import os, yaml
+# Chromium's profile lives on the persisted home volume, so a login done during a
+# takeover survives restarts and sleep.
+PROFILE_DIR="${HOME}/.config/desktop-chromium"
 
-path = os.path.expanduser("~/.hermes/config.yaml")
-os.makedirs(os.path.dirname(path), exist_ok=True)
-try:
-    with open(path) as f:
-        cfg = yaml.safe_load(f) or {}
-except FileNotFoundError:
-    cfg = {}
-
-base = os.environ["AGENT37_LLM_PROXY_URL"].rstrip("/")
-if not base.endswith("/v1"):
-    base += "/v1"
-
-providers = [p for p in cfg.get("custom_providers", []) if not (isinstance(p, dict) and p.get("name") == "Agent37")]
-providers.append({
-    "name": "Agent37",
-    "base_url": base,
-    "api_key": os.environ["AGENT37_MANAGED_TOKEN"],
-    "api_mode": "chat_completions",
-    "model": "default",
-})
-cfg["custom_providers"] = providers
-
-model = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
-if not (model.get("default") or model.get("model")):
-    model["default"] = "default"
-model["provider"] = "custom:Agent37"
-cfg["model"] = model
-
-with open(path, "w") as f:
-    yaml.safe_dump(cfg, f)
-PY
+# Absolute paths throughout: the image PATH puts the persisted home first, so a
+# `pip install websockify` in ~/.venv would otherwise replace the one we run.
+respawn() {
+  local log="$1"
+  shift
+  while true; do
+    "$@" >"${log}" 2>&1 || true
+    sleep 2
+  done
 }
 
-# The hermes-base entrypoint starts Xvfb on :99 and openbox. Wait for the display,
-# then attach the VNC stack and the Chromium the agent drives:
+# The last run's profile lock can name a pid that is alive again after a restart,
+# and Chromium then refuses the profile, so drop it first. Chromium's own sandbox
+# cannot start under gVisor; --test-type only hides the warning bar about that.
+run_chromium() {
+  rm -f "${PROFILE_DIR}"/Singleton{Lock,Socket,Cookie}
+  /usr/bin/chromium --no-sandbox --test-type --disable-dev-shm-usage \
+    --no-first-run --no-default-browser-check --hide-crash-restore-bubble \
+    --remote-debugging-port=9222 --user-data-dir="${PROFILE_DIR}" \
+    --start-maximized about:blank
+}
+
+# The stock entrypoint starts Xvfb on :99 and openbox. Wait for the display, then
+# attach the VNC stack and the Chromium the agent drives:
 #   x11vnc     screencasts :99 on loopback port 5900
 #   websockify serves the noVNC web client on 6901 and bridges it to 5900
 #   chromium   runs headed on the display, DevTools open on loopback 9222 for Hermes
+# Each one comes back if it exits, so closing the browser during a takeover reopens it.
 start_desktop_view() {
   (
     export DISPLAY=:99
-    until xdpyinfo >/dev/null 2>&1; do sleep 1; done
+    until /usr/bin/xdpyinfo >/dev/null 2>&1; do sleep 1; done
 
-    x11vnc -display :99 -rfbport 5900 -localhost -forever -shared -nopw -quiet \
-      >/tmp/x11vnc.log 2>&1 &
-    websockify --web /usr/share/novnc 6901 localhost:5900 >/tmp/novnc.log 2>&1 &
-
-    chromium --no-sandbox --disable-dev-shm-usage \
-      --no-first-run --no-default-browser-check \
-      --remote-debugging-port=9222 \
-      --user-data-dir="$HOME/.config/chromium" \
-      --start-maximized about:blank >/tmp/chromium.log 2>&1 &
+    respawn /tmp/x11vnc.log /usr/bin/x11vnc -display :99 -rfbport 5900 -localhost \
+      -forever -shared -nopw -quiet &
+    respawn /tmp/novnc.log /usr/bin/websockify --web /usr/share/novnc 6901 localhost:5900 &
+    respawn /tmp/chromium.log run_chromium &
+    wait
   ) &
 }
 
-configure_managed_llm
+# /tmp survives a restart, and Xvfb refuses to start while the last boot's lock
+# names a pid that happens to be alive again.
+rm -f /tmp/.X99-lock /tmp/.X11-unix/X99
+
 start_desktop_view
 
-exec /usr/local/bin/entrypoint.sh
+# The stock entrypoint does everything else: managed model, Composio, Brave, paid tools,
+# the agent37 CLI's skill, hooks, and the gateway on 3737.
+exec /usr/local/bin/entrypoint.sh "$@"

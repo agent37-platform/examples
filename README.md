@@ -15,6 +15,10 @@ Small, single-purpose apps that each teach one part of the API.
 |---|---|
 | [hermes-chat](./hermes-chat) | A streaming chat app on a Hermes agent instance: create and manage instances, stream replies token by token, sessions, cancel. |
 | [site-builder](./site-builder) | A website builder: the user asks the agent for a site, the agent builds and serves it on the instance, and your server publishes it at a permanent public URL. The owner-consent pattern for public ports. |
+| [dots](./dots) | Build your own Dots: every user gets a named agent with its own computer that owns ongoing jobs, keeps its own schedule, messages them first, and (optionally) lets them watch and take over its screen. |
+| [instinct](./instinct) | Build your own Instinct: a texting assistant per user with its own iMessage line, email address, and calls through Inkbox, reminders that text first, and a web workspace. |
+| [grok-bot](./grok-bot) | Build your own Grok Bot: a team of named Bots that share one computer per user, with parallel chats, per-Bot routines, a team chat with @mentions, and an optional live screen. |
+| [muse](./muse) | Build your own Muse: a personal agent with daily ideas, goals it checks in on, a library of what it made, and an editable memory. |
 | [claude-code-byo-model](./claude-code-byo-model) | Claude Code on your own OpenRouter key: override `ANTHROPIC_BASE_URL` in instance env so model calls bill your OpenRouter account, with per-role model picks. |
 
 ## Custom images
@@ -23,7 +27,7 @@ Dockerfiles that change what the agent itself is. Each folder builds into a [wor
 
 | Image | What it shows |
 |---|---|
-| [hermes-vnc-desktop](./custom-images/hermes-vnc-desktop) | A live desktop view: watch the agent open Chromium, click, and fill forms in real time from any browser tab, embeddable in your own app. |
+| [hermes-vnc-desktop](./custom-images/hermes-vnc-desktop) | A live desktop view on the stock Hermes image: watch the agent open Chromium, click, and fill forms in real time, and take over when it needs you. Logins persist, and it embeds in your own app. |
 
 ## Full apps to fork
 

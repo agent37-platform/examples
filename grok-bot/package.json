@@ -1,0 +1,17 @@
+{
+  "name": "grok-bot",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Build your own Grok Bot on Agent37: a team of named Bots that share one always-on computer per user",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}

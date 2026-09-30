@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Build your own Instinct</title>
+  <link rel="icon" href="/avatar.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="landing">
+    <div class="landing-inner">
+      <img class="mark" src="/avatar.svg" alt="" />
+      <h1>A personal assistant you just text.</h1>
+      <ul class="bullets">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 5h16v11H9l-5 4V5z" stroke-linejoin="round"/></svg>
+          <div><b>Text it like a friend.</b> iMessage or email, one memory across both, no new app. Calls get answered too, and it reads the transcript.</div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <div><b>It has its own computer.</b> It looks things up, fills in forms, and keeps working after you put your phone down.</div>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 2M9 3h6" stroke-linecap="round"/></svg>
+          <div><b>It texts you first.</b> Reminders, check-ins, and the follow-up you were about to forget.</div>
+        </li>
+      </ul>
+      <a id="cta" class="link-cta" href="/start">Get your assistant &rarr;</a>
+      <p class="footnote">Build your own Instinct: an <a href="https://www.agent37.com/docs">Agent37</a> example. Not affiliated with Instinct or Spear Street Technology.</p>
+    </div>
+  </main>
+  <script type="module">
+    const res = await fetch('/api/me');
+    if (res.ok) {
+      const me = await res.json();
+      const cta = document.getElementById('cta');
+      cta.textContent = me.setup.step === 'ready' ? `Open ${me.agentName} →` : `Finish setting up ${me.agentName} →`;
+      cta.href = me.setup.step === 'ready' ? '/app' : '/start';
+    }
+  </script>
+</body>
+</html>

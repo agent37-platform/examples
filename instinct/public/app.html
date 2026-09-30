@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workspace | Build your own Instinct</title>
+  <link rel="icon" href="/avatar.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="contact">
+        <div class="who">
+          <img src="/avatar.svg" alt="" />
+          <div>
+            <div class="name" data-agent-name></div>
+            <div class="handle" id="handle"></div>
+          </div>
+        </div>
+        <div class="contact-rows">
+          <div class="contact-row" id="row-imessage" title="How to text it">iMessage<span id="imessage-number"></span></div>
+          <div class="contact-row" id="row-email" title="Click to copy">Email<span id="email"></span></div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#chat" data-view="chat">Chat</a>
+        <a href="#reminders" data-view="reminders">Reminders</a>
+        <a href="#memory" data-view="memory">Memory</a>
+        <a href="#connectors" data-view="connectors">Connectors</a>
+        <a href="#persona" data-view="persona">Persona</a>
+        <a href="#texting" data-view="texting">Text <span data-agent-name></span></a>
+      </nav>
+      <div class="foot"><span id="me-name"></span><br /><kbd>&#8984;</kbd> <kbd>K</kbd> to jump anywhere</div>
+    </aside>
+
+    <main class="main">
+      <header class="main-head">
+        <div>
+          <h2 id="view-title"></h2>
+          <div class="sub" id="view-sub"></div>
+        </div>
+        <button id="bell" class="bell ghost" type="button" aria-label="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16zM10 20a2 2 0 0 0 4 0" stroke-linejoin="round"/></svg>
+          <span id="badge" class="badge hidden"></span>
+        </button>
+      </header>
+      <div id="panel" class="panel hidden"></div>
+
+      <section data-pane="chat" class="chat hidden">
+        <nav id="threads" class="threads"></nav>
+        <div class="convo">
+          <div id="messages" class="messages"></div>
+          <p id="read-only" class="read-only" hidden></p>
+          <form id="composer" class="composer">
+            <textarea id="input" rows="1" placeholder="Message your assistant" required></textarea>
+            <button id="send" class="primary" type="submit">Send</button>
+            <button id="stop" type="button" hidden>Stop</button>
+          </form>
+        </div>
+      </section>
+
+      <section data-pane="reminders" class="column hidden">
+        <form id="reminder-form" class="section">
+          <div class="section-title">New reminder</div>
+          <textarea id="reminder-task" rows="2" placeholder="Text me the weather in San Francisco and whether I need a jacket" required></textarea>
+          <div class="row wrap" style="margin-top: 10px">
+            <select id="reminder-when" style="width: auto">
+              <option value="0 8 * * *">Every day at 8am</option>
+              <option value="0 9 * * 1-5">Weekdays at 9am</option>
+              <option value="0 18 * * 0">Sundays at 6pm</option>
+              <option value="0 * * * *">Every hour</option>
+              <option value="custom">Custom schedule</option>
+            </select>
+            <input id="reminder-cron" class="hidden" placeholder="cron, e.g. 30 7 * * 1" style="width: 200px" />
+            <span class="faint" id="reminder-tz"></span>
+            <span class="spacer"></span>
+            <button class="primary" type="submit">Add</button>
+          </div>
+          <p id="reminder-error" class="error-text"></p>
+        </form>
+        <div class="section">
+          <div class="section-title">Scheduled <button id="reminders-refresh" class="ghost" type="button">Refresh</button></div>
+          <div id="reminders"></div>
+        </div>
+      </section>
+
+      <section data-pane="memory" class="column hidden">
+        <div class="section">
+          <div class="section-title"><span>What <span data-agent-name></span> knows about you</span> <span class="faint">USER.md</span></div>
+          <textarea id="memory-user" rows="8"></textarea>
+          <div class="row" style="margin-top: 10px"><span class="faint" id="memory-user-note"></span><span class="spacer"></span><button data-save="user">Save</button></div>
+        </div>
+        <div class="section">
+          <div class="section-title"><span><span data-agent-name></span>'s notes</span> <span class="faint">MEMORY.md</span></div>
+          <textarea id="memory-memory" rows="10"></textarea>
+          <div class="row" style="margin-top: 10px"><span class="faint" id="memory-memory-note"></span><span class="spacer"></span><button data-save="memory">Save</button></div>
+        </div>
+      </section>
+
+      <section data-pane="connectors" class="column hidden">
+        <div class="section">
+          <div class="section-title">Connected</div>
+          <div id="connections"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">Add an app</div>
+          <input id="toolkit-search" placeholder="Search Gmail, Google Calendar, Notion, Slack..." />
+          <div id="toolkits" class="grid" style="margin-top: 12px"></div>
+          <div class="row" style="margin-top: 12px"><span class="spacer"></span><button id="toolkits-more" class="ghost hidden" type="button">More</button></div>
+        </div>
+      </section>
+
+      <section data-pane="persona" class="column hidden">
+        <form id="persona-form" class="section">
+          <label for="persona-name" style="margin-top: 0">Name</label>
+          <input id="persona-name" required />
+          <label for="persona-text">Personality</label>
+          <textarea id="persona-text" rows="5"></textarea>
+          <label for="persona-phone">Your mobile number</label>
+          <input id="persona-phone" type="tel" placeholder="+1 415 555 0100" required />
+          <label for="persona-email">Your email</label>
+          <input id="persona-email" type="email" placeholder="you@example.com" required />
+          <p class="hint">Only this number can text or call <span data-agent-name></span>, and only mail from this address reaches it.</p>
+          <div class="row" style="margin-top: 14px"><span id="persona-note" class="faint"></span><span class="spacer"></span><button class="primary" type="submit">Save</button></div>
+        </form>
+        <div class="section">
+          <div class="section-title">Delete your assistant</div>
+          <p class="muted">Deletes its computer, its phone line, and its inbox. This cannot be undone.</p>
+          <button id="delete-account" class="danger" type="button">Delete <span data-agent-name></span></button>
+        </div>
+      </section>
+
+      <section data-pane="texting" class="column hidden">
+        <div class="section" id="texting-body"></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

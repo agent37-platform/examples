@@ -1,10 +1,12 @@
-# Hermes with a live desktop: watch the agent browse in real time from any browser tab.
+# Hermes with a live desktop: watch the agent browse in real time, and take over when it needs you.
 #
-# hermes-base already ships Chromium, Xvfb, and openbox, and its entrypoint brings up a
-# virtual display on :99. This image adds the three missing pieces: x11vnc (the VNC
-# server), noVNC (the web client), and websockify (its WebSocket bridge). It also
-# starts a visible Chromium the agent drives over the DevTools protocol.
-FROM ghcr.io/agent37-platform/hermes-base:latest
+# Built on the stock agent37-hermes image, so everything managed stays: the managed model,
+# Composio, Brave, paid tools, the `agent37` CLI and its cron skill, and the approval and
+# browser defaults. That image already ships Chromium, Xvfb, and openbox, and its entrypoint
+# brings up a virtual display on :99. This image adds the three missing pieces: x11vnc (the
+# VNC server), noVNC (the web client), and websockify (its WebSocket bridge). It also starts a
+# visible Chromium the agent drives over the DevTools protocol.
+FROM ghcr.io/agent37-platform/hermes:latest
 
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
