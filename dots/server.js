@@ -22,6 +22,8 @@ import fs from 'node:fs';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 const API_KEY = process.env.AGENT37_API_KEY;
 const API_BASE = process.env.AGENT37_API_BASE || 'https://api.agent37.com';
@@ -60,6 +62,8 @@ const SOUL_PATH = '~/.hermes/SOUL.md';
 const MEMORY_PATHS = { user: '~/.hermes/memories/USER.md', memory: '~/.hermes/memories/MEMORY.md' };
 const NOTIFY_PATH = '~/.dots/notify';
 const RESPONSIBILITIES_PATH = '~/.dots/responsibilities.md';
+const OUTPUTS_PATH = '~/outputs';
+const OUTPUTS_BRIEF = `Save finished files for your person directly in ${OUTPUTS_PATH}, with clear file names. The app shows files in that folder as Outputs, where your person can preview and download them.`;
 const PERSONA_START = '<!-- dots:persona -->';
 const PERSONA_END = '<!-- /dots:persona -->';
 // Everything the app says to the agent on the user's behalf starts with this line, so the
@@ -275,6 +279,9 @@ function personaBlock(user) {
     `3. Message first. When a check-in finds something ${you} should know (progress, a question, a decision), send it with: sh ${NOTIFY_PATH} "your message"`,
     `   ${you} is not watching check-in chats (yours, or tasks they set up in the app), so this is the only way they hear from you. One short message, written to be read cold. Stay quiet when there is nothing new.`,
     '',
+    '## Files you make',
+    OUTPUTS_BRIEF,
+    '',
     `## Hand back what is not yours to do`,
     `Ask first before anything that spends money, sends something to other people on ${you}'s behalf, or changes an account (passwords, settings, deletions). You never make purchases: find the options, then hand the decision and the checkout back to ${you}.`,
     ...(user.agent.desktop ? ['', ...desktopBlock(you)] : []),
@@ -400,7 +407,7 @@ app.get('/api/me', async (req, res) => {
   res.json({ agent, status, unread: req.user.notifications.filter((n) => !n.read).length });
 });
 
-const MASCOTS = ['bean', 'puff', 'drop', 'pebble', 'sprout'];
+const MASCOTS = ['bean', 'puff', 'drop', 'pebble', 'sprout', 'dot'];
 const ACCENT = /^#[0-9a-f]{6}$/i;
 
 const creating = new Set();
@@ -591,7 +598,7 @@ function replyContext(user, ids) {
 app.post('/api/responses', requireAgent, (req, res) => {
   const input = typeof req.body?.input === 'string' ? req.body.input.trim() : '';
   const sessionId = HEX32.test(req.body?.session_id || '') ? req.body.session_id : null;
-  const context = [req.body?.intro === true ? introBrief(req.user) : replyContext(req.user, req.body?.replying_to), req.body?.took_over === true ? TOOK_OVER : '']
+  const context = [OUTPUTS_BRIEF, req.body?.intro === true ? introBrief(req.user) : replyContext(req.user, req.body?.replying_to), req.body?.took_over === true ? TOOK_OVER : '']
     .filter(Boolean)
     .join('\n\n');
   if (!input && req.body?.intro !== true) return res.status(400).json({ error: { code: 'invalid_request', message: 'Say something first.' } });
@@ -711,7 +718,7 @@ app.get('/api/schedule', requireAgent, async (req, res) => {
 // watching that chat. Tasks set up in the app say so, and say how to reach the user.
 function taskPrompt(user, task) {
   const you = user.agent.userName || 'Your person';
-  return `${APP_CONTEXT}\nThis is a scheduled task ${you} set up in the Dots app. ${you} is not watching this chat: send what they should see with sh ${NOTIFY_PATH} "your message".\n${APP_CONTEXT_END}\n\n${task}`;
+  return `${APP_CONTEXT}\nThis is a scheduled task ${you} set up in the Dots app. ${you} is not watching this chat: send what they should see with sh ${NOTIFY_PATH} "your message".\n${OUTPUTS_BRIEF}\n${APP_CONTEXT_END}\n\n${task}`;
 }
 
 app.post('/api/schedule', requireAgent, async (req, res) => {
@@ -800,6 +807,57 @@ app.post('/api/computer', requireAgent, async (req, res) => {
     res.json({ ws: `wss://${signed.host}/websockify?a37_token=${signed.searchParams.get('a37_token')}` });
   } catch (err) {
     sendError(res, err);
+  }
+});
+
+// ---- outputs: only regular files directly inside ~/outputs, never configuration files ----
+
+async function listOutputs(id) {
+  try {
+    const home = await call(instanceUrl(id, '/v1/files'));
+    if (!home.entries.some(entry => entry.name === 'outputs' && entry.type === 'directory')) return [];
+    const listing = await call(instanceUrl(id, `/v1/files?${new URLSearchParams({ path: OUTPUTS_PATH })}`));
+    return listing.entries.filter(entry => entry.type === 'file' && !entry.hidden)
+      .map(({ name, size, modified }) => ({ name, size, modified }))
+      .sort((a, b) => b.modified - a.modified);
+  } catch (err) {
+    if (err.status === 404) return [];
+    throw err;
+  }
+}
+
+app.get('/api/outputs', requireAgent, async (req, res) => {
+  try { res.json({ data: await listOutputs(req.instanceId) }); }
+  catch (err) { sendError(res, err); }
+});
+
+app.get('/api/outputs/:name', requireAgent, async (req, res) => {
+  const name = req.params.name;
+  // Names only, with no traversal or hidden files. Symlinks are excluded by the listing.
+  if (!name || name.startsWith('.') || /[/\\\x00-\x1f\x7f]/.test(name)) {
+    return res.status(400).json({ error: { code: 'invalid_request', message: 'Invalid output file name.' } });
+  }
+  const controller = new AbortController();
+  res.on('close', () => { if (!res.writableEnded) controller.abort(); });
+  try {
+    if (!(await listOutputs(req.instanceId)).some(file => file.name === name)) {
+      return res.status(404).json({ error: { code: 'file_not_found', message: 'That output is no longer available.' } });
+    }
+    const query = new URLSearchParams({ path: `${OUTPUTS_PATH}/${name}`, disposition: 'attachment' });
+    const upstream = await fetch(instanceUrl(req.instanceId, `/v1/files/content?${query}`), { headers: AGENT_HEADERS, signal: controller.signal });
+    if (!upstream.ok) {
+      const norm = normalizeError(upstream.status, await upstream.json().catch(() => null));
+      return res.status(norm.status).json(norm.body);
+    }
+    res.attachment(name).set({
+      'Content-Type': 'application/octet-stream',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': 'sandbox',
+      'Cache-Control': 'no-store',
+    });
+    await pipeline(Readable.fromWeb(upstream.body), res);
+  } catch (err) {
+    if (!controller.signal.aborted && !res.headersSent) sendError(res, err);
   }
 });
 
