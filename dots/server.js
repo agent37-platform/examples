@@ -422,7 +422,7 @@ app.post('/api/agent', async (req, res) => {
   const timezone = clip(req.body?.timezone, 64);
   // The callback token pins "may message this user" to "was created by this app": the
   // agent presents the raw token from its env, /api/notify compares its hash to the one in
-  // metadata. env is write-only and immutable, so rotating it means a new instance.
+  // metadata. env is write-only, so rotating it means a PATCH plus a restart.
   const token = crypto.randomBytes(24).toString('hex');
   creating.add(req.user.id);
   try {

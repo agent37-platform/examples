@@ -401,7 +401,7 @@ async function provision(uid) {
       setState(user, 'creating');
       // The notify token pins "may message this user" to "is this user's agent": the raw
       // token goes into the container env (the agent's shell can read it), the server keeps
-      // only its hash. env is write-only and immutable, so rotating it means a new instance.
+      // only its hash. env is write-only, so rotating it means a PATCH plus a restart.
       const token = crypto.randomBytes(24).toString('hex');
       const { res, body } = await agent37(`${API_BASE}/v1/instances`, {
         method: 'POST',
