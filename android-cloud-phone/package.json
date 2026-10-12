@@ -1,0 +1,8 @@
+{
+  "name": "android-cloud-phone",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A cloud Android phone on Agent37: create it, boot it, drive it with adb, watch the screen.",
+  "engines": { "node": ">=20" }
+}
