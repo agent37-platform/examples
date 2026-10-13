@@ -87,5 +87,7 @@ authenticated edge as every other port. It is not the only option:
   template with `npx agent37 templates build . --name my-phone --default-port 6901`; create
   it with `"type": "vm"` exactly as above. On the stock image you can also just
   `sdkmanager --install "system-images;android-16;google_apis;x86_64"` on the instance.
-- **Docker is on the box too**, with its data-root on the durable disk, so the same machine
-  runs your own containers next to the phone.
+- **The box runs the phone and nothing else.** For containers next to it, use the
+  [`agent37-ubuntu`](https://www.agent37.com/docs/agents-api/vm-instances) template, or
+  install what you need on this one: every process here is memory the emulator is not
+  getting.
