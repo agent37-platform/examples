@@ -36,7 +36,7 @@ Open [http://localhost:3102](http://localhost:3102) and click **Get your assista
 
 | Step | Call |
 | --- | --- |
-| The user's computer | `POST /v1/instances` with `public_ports: [{ port: 8765 }]`, `auto_sleep: true`, a `budget.credit_micros`, and a notify token in `env` |
+| The user's computer | `POST /v1/instances` with `template: "agent37-hermes"`, `public_ports: [{ port: 8765 }]`, `auto_sleep: true`, a `budget.credit_micros`, and a notify token in `env` |
 | The user's phone line and inbox | Inkbox `POST /identities` (`imessage_enabled: true`), `PUT /identities/{handle}/avatar`, then `PATCH /identities/{handle}` with `phone_filter_mode` and `mail_inbound_filter_mode` set to `whitelist`, plus one `allow` rule for your number and one for your email address |
 | A key only for that line | Inkbox `POST /api-keys` with `scoped_identity_id` (the admin key never enters the instance) |
 | iMessage, email, calls | One `POST /v1/instances/{id}/exec`: SDK into the Hermes venv, `hermes plugins install inkbox-ai/hermes-agent-plugin --enable`, `INKBOX_PUBLIC_URL` set to the public-port URL, `hermes inkbox bootstrap --identity ... --api-key-stdin --voice-ai --rotate-signing-key` |

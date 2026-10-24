@@ -324,6 +324,7 @@ async function createComputer(user) {
       const { res, body } = await agent37(`${API_BASE}/v1/instances`, {
         method: 'POST',
         body: JSON.stringify({
+          template: 'agent37-hermes',
           name: `instinct ${user.agentName}`.slice(0, 60),
           user: user.id,
           // budget.credit_micros funds managed LLM calls ($1 = 1,000,000 micros); the default

@@ -40,7 +40,7 @@ One key, two planes, and the browser never sees either: every call goes browser 
 
 | Muse | This app | API |
 |---|---|---|
-| Your agent and its computer | One instance per visitor, created on onboarding, readiness by polling health | `POST /v1/instances`, `GET /v1/health` |
+| Your agent and its computer | One instance per visitor, created on onboarding, readiness by polling health | `POST /v1/instances` with `template: "agent37-hermes"`, `GET /v1/health` |
 | Name, tagline, tone, avatar | A marked block in `~/.hermes/SOUL.md`, rewritten read-merge-write, and a fresh main chat once the persona changes; the avatar is app-side art | `GET`/`PUT /v1/files/content` |
 | Chat, side chats | Main chat plus side chats, each a session with an id this app mints and indexes | `POST /v1/responses` (`stream: true`), `GET /v1/sessions` |
 | Send while it works | Messages typed during a turn wait in a client-side queue; a `409 session_busy` from another tab queues too and follows the running turn | `error.response_id`, `GET /v1/responses/{id}/stream` |

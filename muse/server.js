@@ -406,6 +406,7 @@ async function provision(uid) {
       const { res, body } = await agent37(`${API_BASE}/v1/instances`, {
         method: 'POST',
         body: JSON.stringify({
+          template: 'agent37-hermes',
           name: `muse ${user.profile.agentName}`.slice(0, 60),
           user: uid,
           // A monthly allowance for managed LLM, search and app calls ($1 = 1,000,000

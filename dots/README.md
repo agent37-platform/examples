@@ -49,7 +49,7 @@ One `sk_live_` key, held by this server only. The browser never sees it, and nev
 
 | In the app | API call |
 | --- | --- |
-| Create your agent | `POST /v1/instances` with `budget.monthly_cap_micros`, `auto_sleep`, `idle_timeout_seconds`, `env.DOTS_CALLBACK_TOKEN`, and the token's SHA-256 in `metadata` |
+| Create your agent | `POST /v1/instances` with `template: "agent37-hermes"`, `budget.monthly_cap_micros`, `auto_sleep`, `idle_timeout_seconds`, `env.DOTS_CALLBACK_TOKEN`, and the token's SHA-256 in `metadata` |
 | Waiting for it to boot | `GET https://{id}.agent37.app/v1/health` until `healthy: true` |
 | Name and personality | `GET` then `PUT /v1/files/content?path=~/.hermes/SOUL.md` (read-merge-write) |
 | Notify script, first memory | `PUT /v1/files/content` for `~/.dots/notify` and `~/.hermes/memories/USER.md` |
