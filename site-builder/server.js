@@ -149,6 +149,7 @@ app.post('/api/instances', async (req, res) => {
   // one stored in metadata. Rotating it means creating a new instance; env is immutable.
   const token = crypto.randomBytes(24).toString('hex');
   const body = {
+    template: 'agent37-hermes',
     name,
     // budget.credit_micros funds managed LLM calls for this instance ($1 = 1,000,000
     // micros). Without it the default managed budget is $0 and replies come back empty.

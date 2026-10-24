@@ -22,7 +22,7 @@ Creating an instance requires about $0.16 of wallet balance (one day of compute)
 
 The browser never sees your API key. The Express server (`server.js`) holds it and proxies two upstreams:
 
-- **Hosting API** (`api.agent37.com`): create, list, delete instances.
+- **Hosting API** (`api.agent37.com`): create instances from the `agent37-hermes` template, list them, delete them.
 - **Agent API** (`https://{instanceId}.agent37.app`): chat, sessions, models. This is the gateway running inside your instance, reached with the same key.
 
 Chat streaming is a `fetch` POST whose body is parsed as server-sent events (`public/chat.js`). `EventSource` cannot POST or send custom headers like `X-Agent37-Key`, so a fetch-based parser is the way to consume Agent37 streams in a browser.

@@ -133,6 +133,7 @@ app.post('/api/instances', (req, res) => {
   // budget.credit_micros funds managed LLM calls for this instance ($1 = 1,000,000 micros).
   // Without it the default managed budget is $0 and chat replies come back empty.
   const body = {
+    template: 'agent37-hermes',
     name: typeof req.body?.name === 'string' && req.body.name.trim() ? req.body.name.trim().slice(0, 80) : 'hermes-chat example',
     budget: { credit_micros: 1_000_000 },
   };

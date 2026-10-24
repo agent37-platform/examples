@@ -432,7 +432,7 @@ app.post('/api/agent', async (req, res) => {
         name: `dots-${name}`.slice(0, 60),
         user: req.user.id,
         // The desktop image is the stock Hermes image plus a live screen on port 6901.
-        ...(DESKTOP_TEMPLATE ? { template: DESKTOP_TEMPLATE } : {}),
+        template: DESKTOP_TEMPLATE || 'agent37-hermes',
         // A monthly cap, not one-time credit: this agent works on its own schedule for as
         // long as it exists. Without a budget every managed LLM call is refused with 402.
         budget: { monthly_cap_micros: 5_000_000 },
