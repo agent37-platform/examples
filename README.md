@@ -21,6 +21,7 @@ Small, single-purpose apps that each teach one part of the API.
 | [muse](./muse) | Build your own Muse: a personal agent with daily ideas, goals it checks in on, a library of what it made, and an editable memory. |
 | [claude-code-byo-model](./claude-code-byo-model) | Claude Code on your own OpenRouter key: override `ANTHROPIC_BASE_URL` in instance env so model calls bill your OpenRouter account, with per-role model picks. |
 | [android-cloud-phone](./android-cloud-phone) | An Android phone in the cloud: create a VM instance with the emulator already on it, drive it with ADB, and watch the screen from a browser tab. |
+| [claude-managed-agents](./claude-managed-agents) | Claude Managed Agents with one instance per session: the agent's files persist between turns, the instance sleeps while you are away, and sessions run in parallel. |
 
 ## Custom images
 
