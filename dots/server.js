@@ -430,7 +430,6 @@ app.post('/api/agent', async (req, res) => {
       method: 'POST',
       body: JSON.stringify({
         name: `dots-${name}`.slice(0, 60),
-        user: req.user.id,
         // The desktop image is the stock Hermes image plus a live screen on port 6901.
         template: DESKTOP_TEMPLATE || 'agent37-hermes',
         // A monthly cap, not one-time credit: this agent works on its own schedule for as
