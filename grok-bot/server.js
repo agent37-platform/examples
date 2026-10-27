@@ -403,7 +403,6 @@ app.post('/api/setup', async (req, res) => {
   const token = randomHex(24);
   const body = {
     template: DESKTOP_TEMPLATE || 'agent37-hermes',
-    user: req.visitorId,
     name: `grok-bot ${userName}`.slice(0, 60),
     resources: { cpu: SHAPE_CPU, memory: SHAPE_MEMORY },
     budget: { credit_micros: 2_000_000 },

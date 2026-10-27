@@ -310,11 +310,11 @@ async function provision(user) {
 async function createComputer(user) {
   if (!user.instanceId) {
     // A create can finish after its response is lost (this server restarted, or fetch gave up
-    // on a slow cold create). The retry finds that instance by its user tag instead of making
-    // a second one that nobody owns.
+    // on a slow cold create). The retry finds that instance by the user id in its metadata
+    // instead of making a second one that nobody owns.
     const list = await agent37(`${API_BASE}/v1/instances`);
     if (!list.res.ok) throw failed(list.body, list.res.status);
-    let instance = list.body.data.find((entry) => entry.user === user.id);
+    let instance = list.body.data.find((entry) => entry.metadata?.user === user.id);
     if (!instance) {
       // The notify token lets the agent call POST /api/notify: the raw token goes into the
       // container env (write-only on the API), its hash into the store before the create.
@@ -326,7 +326,7 @@ async function createComputer(user) {
         body: JSON.stringify({
           template: 'agent37-hermes',
           name: `instinct ${user.agentName}`.slice(0, 60),
-          user: user.id,
+          metadata: { user: user.id },
           // budget.credit_micros funds managed LLM calls ($1 = 1,000,000 micros); the default
           // budget is $0 and every reply would come back empty.
           budget: { credit_micros: 2_000_000 },

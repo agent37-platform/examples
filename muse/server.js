@@ -408,7 +408,6 @@ async function provision(uid) {
         body: JSON.stringify({
           template: 'agent37-hermes',
           name: `muse ${user.profile.agentName}`.slice(0, 60),
-          user: uid,
           // A monthly allowance for managed LLM, search and app calls ($1 = 1,000,000
           // micros), the way Muse gives each user a weekly allowance. The default is $0,
           // which refuses every managed call. Raise it for paying users.
