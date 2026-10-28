@@ -1,0 +1,14 @@
+{
+  "name": "hermes-browser-use",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Give every user's Hermes agent a Browser Use Cloud browser without putting your Browser Use key in their sandbox",
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "create-agent": "node --env-file=.env create-agent.js"
+  },
+  "engines": {
+    "node": ">=20.6"
+  }
+}
