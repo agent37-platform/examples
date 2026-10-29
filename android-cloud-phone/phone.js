@@ -5,6 +5,8 @@
 import { writeFileSync, appendFileSync, existsSync, readFileSync } from 'node:fs';
 
 const API = process.env.AGENT37_API_URL || 'https://api.agent37.com';
+// exec is answered by the machine the instance runs on, at this address.
+const SANDBOX = 'https://sandbox.agent37.app';
 const KEY = process.env.AGENT37_API_KEY;
 const STATE = '.phone';
 
@@ -15,10 +17,11 @@ function die(message) {
   process.exit(1);
 }
 
-async function api(method, path, body) {
-  const res = await fetch(`${API}${path}`, {
+async function api(method, path, body, origin = API) {
+  const auth = origin === SANDBOX ? { 'X-Agent37-Key': KEY } : { Authorization: `Bearer ${KEY}` };
+  const res = await fetch(`${origin}${path}`, {
     method,
-    headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+    headers: { ...auth, 'Content-Type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const text = await res.text();
@@ -36,8 +39,7 @@ function instanceId() {
 // Every command below is one exec call. The phone is reached through the instance, so
 // nothing has to be exposed to the internet for an agent to drive it.
 async function exec(command) {
-  const r = await api('POST', `/v1/instances/${instanceId()}/exec`, { command });
-  return r;
+  return api('POST', `/v1/instances/${instanceId()}/exec`, { command }, SANDBOX);
 }
 
 async function create() {
