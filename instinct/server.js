@@ -120,6 +120,8 @@ function instanceUrl(id, pathname) {
 
 const hosting = (user, pathname = '') => `${API_BASE}/v1/instances/${user.instanceId}${pathname}`;
 const agentApi = (user, pathname) => instanceUrl(user.instanceId, pathname);
+// exec is answered by the machine the instance runs on, on the sandbox host.
+const sandbox = (user, pathname) => `https://sandbox.${APP_DOMAIN}/v1/instances/${user.instanceId}${pathname}`;
 
 // The API returns three error shapes: the Hosting API and the Agent API use
 // { error: { code, message, hint? } }, but edge rejections are flat strings like
@@ -216,7 +218,7 @@ async function waitForHealthy(user, timeoutMs = 300_000) {
 }
 
 async function exec(user, command) {
-  const { res, body } = await agent37(hosting(user, '/exec'), { method: 'POST', body: JSON.stringify({ command }) });
+  const { res, body } = await agent37(sandbox(user, '/exec'), { method: 'POST', body: JSON.stringify({ command }) });
   if (!res.ok) throw failed(body, res.status);
   return body;
 }
