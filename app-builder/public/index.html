@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <title>App builder · Agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <!-- Tailwind's browser build, pinned with an integrity hash: fine for an example,
+       compile it for production. -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.4/dist/index.global.js" integrity="sha384-LhJn7QKq7hHz9EqN//RkaYS9p1ZU3MqAxjeV0JI95iQ5Gol1uz/cQQ+pesz0xum7" crossorigin="anonymous"></script>
+  <style type="text/tailwindcss">
+    @theme { --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif; }
+  </style>
+  <!-- React and htm from esm.sh, no build step. ?external=react makes react-dom and htm
+       import the one "react" mapped here, so the page runs a single copy of React. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@19.3.1/client?external=react",
+        "htm/react": "https://esm.sh/htm@3.1.1/react?external=react"
+      }
+    }
+  </script>
+</head>
+<body class="bg-stone-50 font-sans text-[15px] text-stone-900 antialiased">
+  <div id="root"></div>
+  <script type="module" src="/agents.js"></script>
+</body>
+</html>

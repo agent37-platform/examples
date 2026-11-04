@@ -1,0 +1,18 @@
+{
+  "name": "app-builder",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "An app builder on Agent37 and Neon: the agent builds a web app, gives it its own Claimable Neon Postgres, and publishes it at a public URL",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "^2.38.2",
+    "@hono/node-server": "^2.1.5",
+    "hono": "^4.13.14"
+  }
+}
