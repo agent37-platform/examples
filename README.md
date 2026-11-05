@@ -15,6 +15,8 @@ Small, single-purpose apps that each teach one part of the API.
 |---|---|
 | [hermes-chat](./hermes-chat) | A streaming chat app on a Hermes agent instance: create and manage instances, stream replies token by token, sessions, cancel. |
 | [site-builder](./site-builder) | A website builder: the user asks the agent for a site, the agent builds and serves it on the instance, and your server publishes it at a permanent public URL. The owner-consent pattern for public ports. |
+| [app-builder](./app-builder) | An app builder with a database per app: the agent builds a web app, gives it its own Postgres with Claimable Neon (no Neon account or token), and your server publishes it. The user claims the database into their own Neon account to keep it. |
+| [fork-agent](./fork-agent) | Fork an agent together with its data: every fork gets its own Neon branch of the agent's database, so you can run a task several ways in parallel, compare the branches with one query, and keep the best attempt. |
 | [dots](./dots) | Build your own Dots: every user gets a named agent with its own computer that owns ongoing jobs, keeps its own schedule, messages them first, and (optionally) lets them watch and take over its screen. |
 | [instinct](./instinct) | Build your own Instinct: a texting assistant per user with its own iMessage line, email address, and calls through Inkbox, reminders that text first, and a web workspace. |
 | [grok-bot](./grok-bot) | Build your own Grok Bot: a team of named Bots that share one computer per user, with parallel chats, per-Bot routines, a team chat with @mentions, and an optional live screen. |
