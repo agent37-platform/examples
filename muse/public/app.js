@@ -236,6 +236,7 @@ function toolStatus(tool) {
 }
 
 function browserStep({ tool, label, arguments: args }) {
+  if (tool === 'browser_exec') return label ? `${label}...` : 'Browsing...';
   if (tool === 'browser_navigate') {
     try {
       return `Opening ${new URL(label || args?.url).hostname}...`;
